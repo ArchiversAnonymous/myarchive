@@ -67,14 +67,14 @@ at_user_file = Table(
     Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
     info="Association table for mapping users to files and vice versa.")
 
-at_post_tag = Table(
+at_memory_tag = Table(
     'at_post_tag', Base.metadata,
-    Column("post_id", Integer, ForeignKey("posts.id"), primary_key=True),
+    Column("memory_id", Integer, ForeignKey("memories.id"), primary_key=True),
     Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
-    info="Association table for mapping posts to tags and vice versa.")
+    info="Association table for mapping memories to tags and vice versa.")
 
-at_comment_tag = Table(
-    'at_comment_tag', Base.metadata,
-    Column("comment_id", Integer, ForeignKey("comments.id"), primary_key=True),
+at_message_tag = Table(
+    'at_message_tag', Base.metadata,
+    Column("message_id", Integer, ForeignKey("messages.id"), primary_key=True),
     Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
-    info="Association table for mapping comments to tags and vice versa.")
+    info="Association table for mapping messages to tags and vice versa.")

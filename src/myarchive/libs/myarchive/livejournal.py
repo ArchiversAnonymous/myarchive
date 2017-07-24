@@ -16,7 +16,7 @@ from myarchive.libs.livejournal.backup import (
 from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.db.tag_db.tables.user import User
-from myarchive.db.tag_db.tables.post import Post
+from myarchive.db.tag_db.tables.memories import Post
 
 
 LOGGER = logging.getLogger(__name__)

@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.libs.deviantart.api import DeviantartError
 from myarchive.libs import deviantart
-from myarchive.db.tag_db.tables import Deviation, Tag, TrackedFile, User
+from myarchive.db.tag_db.tables import Memory, Tag, TrackedFile, User
 
 LOGGER = logging.getLogger(__name__)
 

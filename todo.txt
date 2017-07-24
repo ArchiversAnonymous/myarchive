@@ -10,14 +10,14 @@ Genericize DB:
         - Display Name
         - Creation Date
         - Files
-    Posts (Deviation, LJ/DW Post, Toot, Tweet, YoutubeVideo)
+    Memories (Deviation, LJ/DW Post, Toot, Tweet, YoutubeVideo)
         - (PK, FK) User ID
         - (PK) Post ID
         - Text Content
         - Creation Date
         - Files
         - etc...
-    Comments
+    Messages
         - (FK) Post ID
 
 

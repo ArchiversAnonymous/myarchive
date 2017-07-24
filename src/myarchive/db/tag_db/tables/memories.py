@@ -7,7 +7,7 @@
 # @License MIT
 
 from myarchive.db.tag_db.tables.association_tables import (
-    at_post_tag, at_comment_tag)
+    at_memory_tag, at_message_tag)
 from myarchive.db.tag_db.tables.base import Base
 from sqlalchemy import (
     Column, Integer, String, TIMESTAMP, ForeignKey, UniqueConstraint)
@@ -18,10 +18,10 @@ from myarchive.db.tag_db.tables.tag import Tag
 from myarchive.util.lib import CircularDependencyError
 
 
-class Post(Base):
+class Memory(Base):
     """Class representing an entry retrieved from a LJ-like service."""
 
-    __tablename__ = 'posts'
+    __tablename__ = 'memory'
 
     id = Column(Integer, index=True, primary_key=True)
     itemid = Column(Integer)
@@ -36,20 +36,20 @@ class Post(Base):
     )
 
     comments = relationship(
-        "Comment",
+        "Message",
         backref=backref(
             "post",
-            doc="Entry this comment belongs to.",
+            doc="Moment this message is about.",
             uselist=False),
         doc="Comments on this entry.",
     )
     tags = relationship(
         "Tag",
         backref=backref(
-            "lj_entries",
-            doc="Entries associated with this tag"),
-        doc="Tags that have been applied to this LJ entry.",
-        secondary=at_post_tag
+            "memories",
+            doc="Memories associated with this tag"),
+        doc="Tags that have been applied to this memory.",
+        secondary=at_memory_tag
     )
 
     def __init__(self, itemid, eventtime, subject, text, current_music):
@@ -76,10 +76,10 @@ class Post(Base):
         return lj_entry
 
 
-class Comment(Base):
+class Message(Base):
     """Class representing a comment retrieved from a LJ-like service."""
 
-    __tablename__ = 'comments'
+    __tablename__ = 'messages'
 
     id = Column(Integer, index=True, primary_key=True)
     item_id = Column(Integer)
@@ -101,10 +101,10 @@ class Comment(Base):
     tags = relationship(
         "Tag",
         backref=backref(
-            "comments",
-            doc="Entries associated with this tag"),
-        doc="Tags that have been applied to this entry.",
-        secondary=at_comment_tag
+            "messages",
+            doc="Messages associated with this tag"),
+        doc="Tags that have been applied to this message.",
+        secondary=at_message_tag
     )
 
     def __init__(self, itemid, subject, body, date):

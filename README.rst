@@ -3,6 +3,8 @@ MyArchive
 
 MyArchive is a tool for interacting with a multitude of social networks and sites online via established APIs. It downloads and archives posts, images, favorites, etc, allowing you to maintain a central repository of your online activity on your own machine.
 
+MyArchive recognizes two primary views of your archive, memories and messages. Messages are those notes you send to others, or others send to you, and memories are those special somethings that made you smile, or laugh, or even cry.
+
 Supported Data Import Sources
 +++++++++++++++++++++++++++++
 

@@ -7,7 +7,7 @@ from configparser import NoOptionError
 from myarchive.libs.mastodon import Mastodon
 from myarchive.util.lib import CONFIG_FOLDER
 from myarchive.db.tag_db.tables.user import User
-from myarchive.db.tag_db.tables.post import Post
+from myarchive.db.tag_db.tables.memories import Post
 
 LOGGER = logging.getLogger(__name__)
 APP_SECRET_PATH = os.path.join(CONFIG_FOLDER, "mastodon.app.secret")
