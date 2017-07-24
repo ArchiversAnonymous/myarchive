@@ -8,6 +8,7 @@
 
 from sqlalchemy import (
     Column, Integer, String, TIMESTAMP, ForeignKey, UniqueConstraint)
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -47,6 +48,10 @@ class Memory(Base):
         doc="Tags that have been applied to this memory.",
         secondary=at_memory_tag
     )
+
+    @hybrid_property
+    def tag_names(self):
+        return [tag.name for tag in self.tags]
 
     def __init__(self, service_memory_id, **kwargs):
         self.service_memory_id = service_memory_id
