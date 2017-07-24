@@ -244,20 +244,20 @@ def get_da_user(db_session, da_api, username, media_storage_path):
     Returns the DB user object if it exists, otherwise it grabs the user data
     from the API and stuffs it in the DB.
     """
-    try:
-        user = da_api.get_user(username=username)
-    except DeviantartError:
-        LOGGER.error("Unable to obtain user data for %s", username)
-        return None
 
     # Grab the User object from the API.
     da_user = Person.find_user(
         db_session=db_session,
         service_name="deviantart",
         service_url="https://deviantart.com",
-        user_id=user.userid,
+        user_id=None,
         username=username)
     if da_user is None:
+        try:
+            user = da_api.get_user(username=username)
+        except DeviantartError:
+            LOGGER.error("Unable to obtain user data for %s", username)
+            return None
         da_user = Person(
             service_name="deviantart",
             service_url="https://deviantart.com",
