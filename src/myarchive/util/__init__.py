@@ -6,4 +6,3 @@
 # @Last modified time: 2017/07/21
 # @License MIT
 
-__author__ = 'zeta'

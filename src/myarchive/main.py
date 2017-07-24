@@ -15,7 +15,7 @@ import re
 from logging import getLogger
 
 from myarchive.libs.myarchive import (
-    deviantart, livejournal, shotwell, twitter, youtube)
+    deviantart, livejournal, mastodon, shotwell, twitter, youtube)
 
 from myarchive.db.tag_db.tag_db import TagDB
 from myarchive.db.tag_db.tables.file import TrackedFile
@@ -98,16 +98,22 @@ def main():
         help='Imports files from Youtube.'
     )
     parser.add_argument(
-        '--import_lj_entries',
+        '--import_from_lj',
         action="store_true",
         default=False,
-        help='Imports LJ entries.'
+        help='Imports blog entries from LJ/DW.'
+    )
+    parser.add_argument(
+        '--import_from_mastodon',
+        action="store_true",
+        default=False,
+        help='Imports toots from Mastodon.'
     )
     parser.add_argument(
         '--detect_file_duplicates',
         action="store_true",
         default=False,
-        help='Imports LJ entries.'
+        help='Scans for duplicated TrackedFiles.'
     )
     args = parser.parse_args()
     logger.debug(args)
@@ -228,11 +234,15 @@ def main():
     LiveJournal Section
     """
 
-    if args.import_lj_entries:
+    if args.import_from_lj:
         livejournal.download_journals_and_comments(
             config=config,
             db_session=tag_db.session
         )
+
+    if args.import_from_mastodon:
+        mastodon.download_toots(
+            tag_db.session, media_storage_path, config)
 
     # MainWindow(tag_db)
     # Gtk.main()
