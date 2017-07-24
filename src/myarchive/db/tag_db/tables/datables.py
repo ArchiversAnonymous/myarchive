@@ -20,43 +20,13 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from myarchive.db.tag_db.tables.association_tables import at_deviation_tag
 from myarchive.db.tag_db.tables.base import Base
 from myarchive.db.tag_db.tables.file import TrackedFile
+from myarchive.db.tag_db.tables.user import User
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-EXISTING_USERNAME_CACHE = list()
 HASHTAG_REGEX = r'#([\d\w]+)'
-
-
-class DeviantArtUser(Base):
-    """Class representing a DA user stored by the database."""
-
-    __tablename__ = 'dausers'
-
-    id = Column(Integer, index=True, primary_key=True)
-    userid = Column(String)
-    name = Column(String)
-    profile = Column(String)
-    stats = Column(String)
-    details = Column(String)
-    icon_id = Column(Integer, ForeignKey("files.id"))
-
-    icon = relationship(
-        "TrackedFile",
-        doc="User icon.",
-        uselist=False,
-    )
-
-    def __init__(self, userid, name, profile, stats, details):
-        self.userid = userid
-        self.name = name
-        self.profile = profile
-        self.stats = stats
-        self.details = details
-
-    def __repr__(self):
-        return "<DeviantArtUser(name='%s')>" % self.name
 
 
 class Deviation(Base):
@@ -99,28 +69,26 @@ def get_da_user(db_session, da_api, username, media_storage_path):
     Returns the DB user object if it exists, otherwise it grabs the user data
     from the API and stuffs it in the DB.
     """
-    global EXISTING_USERNAME_CACHE
-    if len(EXISTING_USERNAME_CACHE) == 0:
-        EXISTING_USERNAME_CACHE = [
-            username[0] for username in
-            db_session.query(DeviantArtUser.name).all()]
+    try:
+        user = da_api.get_user(username=username)
+    except DeviantartError:
+        LOGGER.error("Unable to obtain user data for %s", username)
+        return None
+
     # Grab the User object from the API.
-    if username in EXISTING_USERNAME_CACHE:
-        da_user = db_session.query(DeviantArtUser).\
-            filter_by(name=username).one()
-    else:
-        EXISTING_USERNAME_CACHE.append(username)
-        try:
-            user = da_api.get_user(username=username)
-        except DeviantartError:
-            LOGGER.error("Unable to obtain user data for %s", username)
-            return None
-        da_user = DeviantArtUser(
-            userid=user.userid,
-            name=user.username,
-            profile=str(user.profile),
-            stats=str(user.stats),
-            details=str(user.details)
+    da_user = User.find_user(
+        db_session=db_session,
+        service_name="deviantart",
+        service_url="https://deviantart.com",
+        user_id=user.userid,
+        username=username)
+    if da_user is None:
+        da_user = User(
+            service_name="deviantart",
+            service_url="https://deviantart.com",
+            user_id=user.userid,
+            username=username,
+            user_dict=user.__dict__,
         )
         icon_file, existing = TrackedFile.download_file(
             file_source="deviantart",

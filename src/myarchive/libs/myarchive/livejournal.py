@@ -55,6 +55,8 @@ class LJAPIConnection(object):
     def download_journals_and_comments(self, db_session):
         """Downloads journals and comments to a defined dictionary."""
 
+        print(self.journal['login'])
+
         # Sync entries from the server
         print("Downloading journal entries")
         new_journals = \
@@ -78,21 +80,23 @@ class LJAPIConnection(object):
 
         poster = None
         lj_users = dict()
-        for user_id, user_name in users.items():
+        for user_id, username in users.items():
             lj_user = User.find_user(
                 db_session=db_session,
                 service_name="LJ",
                 service_url=self._server.host,
                 user_id=user_id,
-                username=user_name)
+                username=username)
             if lj_user is None:
                 lj_user = User(
                     service_name="LJ",
                     service_url=self._server.host,
                     user_id=user_id,
-                    user_name=user_name,
+                    username=username,
                     user_dict=None,
                 )
+                if user_id == int(self.journal['login']["userid"]):
+                    lj_user.user_dict = self.journal['login']
                 db_session.add(lj_user)
             lj_users[user_id] = lj_user
             if user_id == int(self.journal['login']["userid"]):

@@ -41,7 +41,7 @@ class User(Base):
 
     # Basic User Data.
     user_id = Column(String)
-    user_name = Column(String)
+    username = Column(String)
 
     # Full User Data.
     user_dict = Column(json_type)
@@ -55,12 +55,12 @@ class User(Base):
         secondary=at_user_file,
     )
 
-    def __init__(self, service_name, service_url, user_id, user_name,
+    def __init__(self, service_name, service_url, user_id, username,
                  user_dict):
         self.service_name = service_name
         self.service_url = service_url
         self.user_id = user_id
-        self.user_name = user_name
+        self.username = username
         self.user_dict = user_dict
 
     def __repr__(self):
