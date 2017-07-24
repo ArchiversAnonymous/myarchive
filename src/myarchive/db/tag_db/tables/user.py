@@ -18,7 +18,7 @@ from sqlalchemy.orm import backref, relationship
 from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.db.tag_db.tables.association_tables import at_user_file
-from myarchive.db.tag_db.tables.base import Base
+from myarchive.db.tag_db.tables.base import Base, json_type
 from myarchive.db.tag_db.tables.file import TrackedFile
 
 
@@ -39,15 +39,14 @@ class User(Base):
     service_name = Column(String)
     service_url = Column(String)
 
-    # User information.
+    # Basic User Data.
     user_id = Column(String)
     user_name = Column(String)
-    display_name = Column(String)
-    url = Column(String)
-    description = Column(String)
-    location = Column(String)
-    time_zone = Column(String)
-    created_at = Column(String)
+
+    # Full User Data.
+    user_dict = Column(json_type)
+
+    # Useful flag.
     files_downloaded = Column(Boolean, default=False)
 
     files = relationship(
@@ -57,18 +56,12 @@ class User(Base):
     )
 
     def __init__(self, service_name, service_url, user_id, user_name,
-                 display_name=None, url=None, description=None, location=None,
-                 time_zone=None, created_at=None):
+                 user_dict):
         self.service_name = service_name
         self.service_url = service_url
         self.user_id = user_id
         self.user_name = user_name
-        self.display_name = display_name
-        self.url = url
-        self.description = description
-        self.location = location
-        self.time_zone = time_zone
-        self.created_at = created_at
+        self.user_dict = user_dict
 
     def __repr__(self):
         return (

@@ -69,28 +69,29 @@ class LJAPIConnection(object):
         # print(self.journal['login'])
 
         users = {
-            int(self.journal['login']["userid"]):
+                self.journal['login']["userid"]:
                 self.journal['login']["fullname"],
                 # self.journal['login']["username"],
         }
         # for user_id, username in self.journal["comment_posters"].items():
-        #     users[int(user_id)] = username
+        #     users[user_id] = username
 
         poster = None
         lj_users = dict()
-        for user_id, username in users.items():
+        for user_id, user_name in users.items():
             lj_user = User.find_user(
                 db_session=db_session,
                 service_name="LJ",
                 service_url=self._server.host,
                 user_id=user_id,
-                username=username)
+                username=user_name)
             if lj_user is None:
                 lj_user = User(
                     service_name="LJ",
                     service_url=self._server.host,
                     user_id=user_id,
-                    user_name=username,
+                    user_name=user_name,
+                    user_dict=None,
                 )
                 db_session.add(lj_user)
             lj_users[user_id] = lj_user
