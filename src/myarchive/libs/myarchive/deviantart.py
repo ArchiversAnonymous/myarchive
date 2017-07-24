@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.libs.deviantart.api import DeviantartError
 from myarchive.libs import deviantart
-from myarchive.db.tag_db.tables import Deviation, Memory, Tag, TrackedFile, Person
+from myarchive.db.tag_db.tables import Memory, Tag, TrackedFile, Person
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def __download_user_deviations(
         folderid = collection["folderid"]
 
         # Grab list of existing deviationids.
-        query_results = database.session.query(Deviation.deviationid).all()
+        query_results = database.session.query(Memory.service_memory_id).all()
         existing_deviationids = [item for (item,) in query_results]
 
         deviations = []
@@ -192,14 +192,14 @@ def __download_user_deviations(
             # Create the Deviation DB entry. If we already have it, skip all
             # this madness.
             try:
-                database.session.query(Deviation).\
-                    filter_by(deviationid=str(deviation.deviationid)).one()
+                database.session.query(Memory).\
+                    filter_by(service_memory_id=str(deviation.deviationid)).one()
                 continue
             except NoResultFound:
-                db_deviation = Deviation(
+                db_deviation = Memory(
                     title=deviation.title,
                     description=deviation_metadata["description"],
-                    deviationid=deviation.deviationid,
+                    service_memory_id=deviation.deviationid,
                 )
                 db_deviation.file = tracked_file
                 database.session.add(db_deviation)
