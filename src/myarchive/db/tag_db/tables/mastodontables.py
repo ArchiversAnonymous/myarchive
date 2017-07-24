@@ -17,7 +17,7 @@ from sqlalchemy import (Boolean, Column, Integer, String, Text)
 from sqlalchemy.orm import backref, relationship
 
 from myarchive.db.tag_db.tables.association_tables import (
-    at_tweet_tag, at_tweet_file, at_twuser_file)
+    at_toot_tag, at_toot_file, at_mastodon_user_file)
 from myarchive.db.tag_db.tables.base import Base
 from myarchive.db.tag_db.tables.file import TrackedFile
 
@@ -29,9 +29,9 @@ HASHTAG_REGEX = r'#([\d\w]+)'
 
 
 class Toot(Base):
-    """Class representing a file tweet by the database."""
+    """Class representing a Mastodon toot stored by the database."""
 
-    __tablename__ = 'mastodon_statuses'
+    __tablename__ = 'toots'
 
     id = Column(Integer, index=True, primary_key=True)
     text = Column(String)
@@ -46,7 +46,7 @@ class Toot(Base):
             "tweets",
             doc="Tweets associated with this file"),
         doc="Files associated with this tweet.",
-        secondary=at_tweet_file
+        secondary=at_toot_file
     )
     tags = relationship(
         "Tag",
@@ -54,7 +54,7 @@ class Toot(Base):
             "tweets",
             doc="Tweets associated with this tag"),
         doc="Tags that have been applied to this tweet.",
-        secondary=at_tweet_tag
+        secondary=at_toot_tag
     )
 
     @property
@@ -92,7 +92,7 @@ class Toot(Base):
 
 
 class MastodonUser(Base):
-    """Class representing a file tweet by the database."""
+    """Class representing a Mastodon user stored by the database."""
 
     __tablename__ = 'mastodon_users'
 
@@ -117,7 +117,7 @@ class MastodonUser(Base):
     files = relationship(
         "TrackedFile",
         doc="Files associated with this user.",
-        secondary=at_twuser_file
+        secondary=at_mastodon_user_file
     )
 
     def __init__(self, user_dict):

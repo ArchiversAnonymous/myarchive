@@ -1,3 +1,33 @@
+Genericize DB:
+    Service
+        - (PK) id
+        - (Unique) Service Name
+        - (Unique) Host
+    Users
+        - (PK, FK) Service
+        - (PK) User ID
+        - Username
+        - Display Name
+        - Creation Date
+        - Files
+    Posts (Deviation, LJ/DW Post, Toot, Tweet, YoutubeVideo)
+        - (PK, FK) User ID
+        - (PK) Post ID
+        - Text Content
+        - Creation Date
+        - Files
+        - etc...
+    Comments
+        - (FK) Post ID
+
+
+
+
+
+
+
+
+
 
 General
     Pylint/PEP8
