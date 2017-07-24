@@ -17,7 +17,7 @@ from sqlalchemy import (Boolean, Column, Integer, String, ForeignKey)
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy.orm.exc import NoResultFound
 
-from myarchive.db.tag_db.tables.association_tables import at_user_file
+from myarchive.db.tag_db.tables.association_tables import at_person_file
 from myarchive.db.tag_db.tables.base import Base, json_type
 from myarchive.db.tag_db.tables.file import TrackedFile
 
@@ -28,10 +28,10 @@ LOGGER = logging.getLogger(__name__)
 HASHTAG_REGEX = r'#([\d\w]+)'
 
 
-class User(Base):
+class Person(Base):
     """Class representing a social media user stored by the database."""
 
-    __tablename__ = 'users'
+    __tablename__ = 'people'
 
     id = Column(Integer, index=True, primary_key=True)
 
@@ -52,7 +52,7 @@ class User(Base):
     files = relationship(
         "TrackedFile",
         doc="Files associated with this user.",
-        secondary=at_user_file,
+        secondary=at_person_file,
     )
 
     def __init__(self, service_name, service_url, user_id, username,

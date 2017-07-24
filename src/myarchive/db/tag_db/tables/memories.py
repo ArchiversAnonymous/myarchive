@@ -21,7 +21,7 @@ from myarchive.util.lib import CircularDependencyError
 class Memory(Base):
     """Class representing an entry retrieved from a LJ-like service."""
 
-    __tablename__ = 'memory'
+    __tablename__ = 'memories'
 
     id = Column(Integer, index=True, primary_key=True)
     itemid = Column(Integer)
@@ -29,7 +29,7 @@ class Memory(Base):
     subject = Column(String)
     text = Column(String)
     current_music = Column(String)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("people.id"), nullable=False)
 
     __table_args__ = (
         UniqueConstraint(itemid, user_id),
@@ -83,19 +83,19 @@ class Message(Base):
 
     id = Column(Integer, index=True, primary_key=True)
     item_id = Column(Integer)
-    post_id = Column(Integer, ForeignKey("posts.id"))
-    user_id = Column(Integer, ForeignKey("users.id"))
+    post_id = Column(Integer, ForeignKey("memories.id"))
+    user_id = Column(Integer, ForeignKey("people.id"))
     subject = Column(String)
     body = Column(String)
     date = Column(TIMESTAMP)
-    parent_id = Column(Integer, ForeignKey("comments.id"))
+    parent_id = Column(Integer, ForeignKey("messages.id"))
 
     __table_args__ = (
         UniqueConstraint(item_id, post_id, user_id),
     )
 
     children = relationship(
-        "Comment",
+        "Message",
         backref=backref('parent_comment', remote_side=[id])
     )
     tags = relationship(

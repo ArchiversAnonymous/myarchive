@@ -61,14 +61,14 @@ at_ytvideo_tag = Table(
 
 
 
-at_user_file = Table(
-    'at_user_file', Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+at_person_file = Table(
+    'at_person_file', Base.metadata,
+    Column("person_id", Integer, ForeignKey("people.id"), primary_key=True),
     Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
-    info="Association table for mapping users to files and vice versa.")
+    info="Association table for mapping people to files and vice versa.")
 
 at_memory_tag = Table(
-    'at_post_tag', Base.metadata,
+    'at_memory_tag', Base.metadata,
     Column("memory_id", Integer, ForeignKey("memories.id"), primary_key=True),
     Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
     info="Association table for mapping memories to tags and vice versa.")

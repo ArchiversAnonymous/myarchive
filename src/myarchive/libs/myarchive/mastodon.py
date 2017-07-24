@@ -6,8 +6,7 @@ from configparser import NoOptionError
 
 from myarchive.libs.mastodon import Mastodon
 from myarchive.util.lib import CONFIG_FOLDER
-from myarchive.db.tag_db.tables.user import User
-from myarchive.db.tag_db.tables.memories import Post
+from myarchive.db.tag_db.tables import Person, Memory
 
 LOGGER = logging.getLogger(__name__)
 APP_SECRET_PATH = os.path.join(CONFIG_FOLDER, "mastodon.app.secret")
@@ -42,7 +41,7 @@ def download_toots(db_session, media_storage_path, config):
                 password,
             )
             user = mastodon_api.account_verify_credentials()
-            mastodon_user = User(
+            mastodon_user = Person(
 
             )
             db_session.add(mastodon_user)
@@ -57,7 +56,7 @@ def download_toots(db_session, media_storage_path, config):
                     for media_dict in status_dict.get(
                             "media_attachments", list()):
                         media_urls_list.append(media_dict["url"])
-                    status = Post(
+                    status = Memory(
                         id=status_dict["id"],
                         text=status_dict["content"],
                         in_reply_to_status_id=status_dict["in_reply_to_id"],
@@ -79,7 +78,7 @@ def download_toots(db_session, media_storage_path, config):
                     for media_dict in status_dict.get(
                             "media_attachments", list()):
                         media_urls_list.append(media_dict["url"])
-                    status = Toot(
+                    status = Memory(
                         id=status_dict["id"],
                         text=status_dict["content"],
                         in_reply_to_status_id=status_dict["in_reply_to_id"],
