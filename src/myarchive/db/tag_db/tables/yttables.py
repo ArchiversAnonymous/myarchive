@@ -29,7 +29,7 @@ HASHTAG_REGEX = r'#([\d\w]+)'
 class YTPlaylist(Base):
     """Class representing a Youtube playlist stored by the database."""
 
-    __tablename__ = 'ytplaylists'
+    __tablename__ = 'yt_playlists'
 
     id = Column(Integer, index=True, primary_key=True)
     title = Column(String)
@@ -55,7 +55,7 @@ class YTPlaylist(Base):
 class YTVideo(Base):
     """Class representing a Youtube video stored by the database."""
 
-    __tablename__ = 'ytvideos'
+    __tablename__ = 'yt_videos'
 
     id = Column(Integer, index=True, primary_key=True)
     uploader = Column(String)

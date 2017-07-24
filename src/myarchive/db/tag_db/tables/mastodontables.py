@@ -7,21 +7,19 @@
 # @License MIT
 
 """
-Module containing class definitions for files to be tagged.
+Module containing class definitions for Mastodon Toots.
 """
 
 import logging
 import re
 
-from sqlalchemy import (
-    Boolean, Column, Integer, String, Text, ForeignKey)
+from sqlalchemy import (Boolean, Column, Integer, String, Text)
 from sqlalchemy.orm import backref, relationship
 
 from myarchive.db.tag_db.tables.association_tables import (
     at_tweet_tag, at_tweet_file, at_twuser_file)
 from myarchive.db.tag_db.tables.base import Base
 from myarchive.db.tag_db.tables.file import TrackedFile
-from myarchive.db.tag_db.tables.tag import Tag
 
 
 LOGGER = logging.getLogger(__name__)
@@ -30,10 +28,10 @@ LOGGER = logging.getLogger(__name__)
 HASHTAG_REGEX = r'#([\d\w]+)'
 
 
-class Tweet(Base):
+class Toot(Base):
     """Class representing a file tweet by the database."""
 
-    __tablename__ = 'twitter_statuses'
+    __tablename__ = 'mastodon_statuses'
 
     id = Column(Integer, index=True, primary_key=True)
     text = Column(String)
@@ -93,10 +91,10 @@ class Tweet(Base):
             self.files_downloaded = True
 
 
-class TwitterUser(Base):
+class MastodonUser(Base):
     """Class representing a file tweet by the database."""
 
-    __tablename__ = 'twitter_users'
+    __tablename__ = 'mastodon_users'
 
     id = Column(Integer, index=True, primary_key=True)
     name = Column(String)
