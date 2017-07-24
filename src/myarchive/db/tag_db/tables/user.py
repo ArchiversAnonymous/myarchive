@@ -15,6 +15,7 @@ import re
 
 from sqlalchemy import (Boolean, Column, Integer, String, ForeignKey)
 from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.db.tag_db.tables.association_tables import at_user_file
 from myarchive.db.tag_db.tables.base import Base
@@ -36,7 +37,7 @@ class User(Base):
 
     # Service information.
     service_name = Column(String)
-    service_hostname = Column(String)
+    service_url = Column(String)
 
     # User information.
     user_name = Column(String)
@@ -82,6 +83,14 @@ class User(Base):
         return (
             "<TwitterUser(id='%s', name='%s' screen_name='%s')>" %
             (self.id, self.name, self.screen_name))
+
+    @classmethod
+    def get_user(cls, db_session, user_id, username):
+        try:
+            user = db_session.query(cls).filter_by(user_id=user_id).one()
+        except NoResultFound:
+            user = cls(user_id=user_id, username=username)
+        return user
 
     def download_media(self, db_session, media_path):
         if self.files_downloaded is False:

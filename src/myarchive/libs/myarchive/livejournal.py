@@ -15,7 +15,7 @@ from myarchive.libs.livejournal.backup import (
     datetime_from_string)
 from sqlalchemy.orm.exc import NoResultFound
 
-from myarchive.db.tag_db.tables.ljtables import (
+from myarchive.db.tag_db.tables.post import (
     LJComment, LJEntry, LJHost, LJUser)
 
 

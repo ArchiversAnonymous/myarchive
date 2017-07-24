@@ -15,17 +15,10 @@ from sqlalchemy.orm import backref, relationship
 from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.db.tag_db.tables.base import Base
+from myarchive.util.lib import CircularDependencyError
 
 
 RECENT_TAG_CACHE = dict()
-
-
-class CircularDependencyError(Exception):
-    """
-    Specific exception for attempting to create a self-referential
-    infinite loop.
-    """
-    pass
 
 
 class Tag(Base):
