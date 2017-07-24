@@ -8,8 +8,9 @@
 
 """Package of database tables"""
 
-from .base import Base
+from .base import Base, json_type
 from .file import TrackedFile
 from .tag import Tag
+from .user import User
 from .twittertables import Tweet, TwitterUser
 from .datables import Deviation

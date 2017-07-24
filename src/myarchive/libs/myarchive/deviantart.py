@@ -12,9 +12,9 @@ import logging
 
 from sqlalchemy.orm.exc import NoResultFound
 
-from myarchive.db.tag_db.tables import Deviation, Tag, TrackedFile
-from myarchive.db.tag_db.tables.datables import get_da_user
+from myarchive.libs.deviantart.api import DeviantartError
 from myarchive.libs import deviantart
+from myarchive.db.tag_db.tables import Deviation, Tag, TrackedFile, User
 
 LOGGER = logging.getLogger(__name__)
 
@@ -119,7 +119,8 @@ def __download_user_deviations(
         for deviation in deviations:
             if deviation.deviationid not in existing_deviationids:
                 new_deviations.append(deviation)
-        LOGGER.info("%s new deviations found.", len(new_deviations))
+        LOGGER.info(
+            "%s new deviations found. Downloading...", len(new_deviations))
 
         # Only pull all tags ahead of time if we have a lot of new files.
         existing_tags_by_name = dict()
@@ -236,3 +237,40 @@ def __download_user_deviations(
                     db_deviation.tags.append(tag)
 
             database.session.commit()
+
+
+def get_da_user(db_session, da_api, username, media_storage_path):
+    """
+    Returns the DB user object if it exists, otherwise it grabs the user data
+    from the API and stuffs it in the DB.
+    """
+    try:
+        user = da_api.get_user(username=username)
+    except DeviantartError:
+        LOGGER.error("Unable to obtain user data for %s", username)
+        return None
+
+    # Grab the User object from the API.
+    da_user = User.find_user(
+        db_session=db_session,
+        service_name="deviantart",
+        service_url="https://deviantart.com",
+        user_id=user.userid,
+        username=username)
+    if da_user is None:
+        da_user = User(
+            service_name="deviantart",
+            service_url="https://deviantart.com",
+            user_id=user.userid,
+            username=username,
+            user_dict=user.__dict__,
+        )
+        icon_file, existing = TrackedFile.download_file(
+            file_source="deviantart",
+            db_session=db_session,
+            media_path=media_storage_path,
+            url=user.usericon)
+        da_user.icon = icon_file
+        db_session.add(da_user)
+        db_session.commit()
+    return da_user

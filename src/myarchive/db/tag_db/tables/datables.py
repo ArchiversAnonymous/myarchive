@@ -12,15 +12,12 @@ Module containing class definitions for files to be tagged.
 
 import logging
 
-from myarchive.libs.deviantart.api import DeviantartError
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from myarchive.db.tag_db.tables.association_tables import at_deviation_tag
 from myarchive.db.tag_db.tables.base import Base
-from myarchive.db.tag_db.tables.file import TrackedFile
-from myarchive.db.tag_db.tables.user import User
 
 
 LOGGER = logging.getLogger(__name__)
@@ -62,40 +59,3 @@ class Deviation(Base):
         self.title = title
         self.description = description
         self.deviationid = deviationid
-
-
-def get_da_user(db_session, da_api, username, media_storage_path):
-    """
-    Returns the DB user object if it exists, otherwise it grabs the user data
-    from the API and stuffs it in the DB.
-    """
-    try:
-        user = da_api.get_user(username=username)
-    except DeviantartError:
-        LOGGER.error("Unable to obtain user data for %s", username)
-        return None
-
-    # Grab the User object from the API.
-    da_user = User.find_user(
-        db_session=db_session,
-        service_name="deviantart",
-        service_url="https://deviantart.com",
-        user_id=user.userid,
-        username=username)
-    if da_user is None:
-        da_user = User(
-            service_name="deviantart",
-            service_url="https://deviantart.com",
-            user_id=user.userid,
-            username=username,
-            user_dict=user.__dict__,
-        )
-        icon_file, existing = TrackedFile.download_file(
-            file_source="deviantart",
-            db_session=db_session,
-            media_path=media_storage_path,
-            url=user.usericon)
-        da_user.icon = icon_file
-        db_session.add(da_user)
-        db_session.commit()
-    return da_user
