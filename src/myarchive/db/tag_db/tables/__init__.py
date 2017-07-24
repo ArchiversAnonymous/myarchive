@@ -13,5 +13,4 @@ from .file import TrackedFile
 from .tag import Tag
 from .person import Person
 from .twittertables import Tweet, TwitterUser
-from .datables import Deviation
 from .memories import Memory, Message

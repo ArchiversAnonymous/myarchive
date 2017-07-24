@@ -131,9 +131,10 @@ def __download_user_deviations(
             }
 
         # Loop through deviations and save author data.
+        da_users_by_username = dict()
         for deviation in new_deviations:
             # Grab user data.
-            get_da_user(
+            da_users_by_username[deviation.author.username] = get_da_user(
                 db_session=database.session,
                 da_api=da_api,
                 username=deviation.author.username,
@@ -196,13 +197,15 @@ def __download_user_deviations(
                     filter_by(service_memory_id=str(deviation.deviationid)).one()
                 continue
             except NoResultFound:
-                db_deviation = Memory(
+                memory = Memory(
                     title=deviation.title,
                     description=deviation_metadata["description"],
                     service_memory_id=deviation.deviationid,
                 )
-                db_deviation.file = tracked_file
-                database.session.add(db_deviation)
+                da_users_by_username[deviation.author.username].memories.\
+                    append(memory)
+                memory.files.append(tracked_file)
+                database.session.add(memory)
 
             # Handle tags, category, and author tags.
             if sync_type == GALLERY:

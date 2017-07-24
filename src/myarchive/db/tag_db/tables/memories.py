@@ -13,7 +13,7 @@ from sqlalchemy.orm import backref, relationship
 from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.db.tag_db.tables.association_tables import (
-    at_memory_tag, at_message_tag)
+    at_memory_file, at_memory_tag, at_message_file, at_message_tag)
 from myarchive.db.tag_db.tables.base import Base, json_type
 from myarchive.util.lib import CircularDependencyError
 
@@ -32,10 +32,18 @@ class Memory(Base):
         UniqueConstraint(service_memory_id, user_id),
     )
 
-    comments = relationship(
+    files = relationship(
+        "TrackedFile",
+        backref=backref(
+            "memories",
+            doc="Memories associated with this file."),
+        doc="Comments on this entry.",
+        secondary=at_memory_file,
+    )
+    messages = relationship(
         "Message",
         backref=backref(
-            "post",
+            "memories",
             doc="Moment this message is about.",
             uselist=False),
         doc="Comments on this entry.",
@@ -76,6 +84,14 @@ class Message(Base):
         UniqueConstraint(item_id, post_id, user_id),
     )
 
+    files = relationship(
+        "TrackedFile",
+        backref=backref(
+            "messages",
+            doc="Memories associated with this file."),
+        doc="Comments on this entry.",
+        secondary=at_message_file,
+    )
     children = relationship(
         "Message",
         backref=backref('parent_comment', remote_side=[id])

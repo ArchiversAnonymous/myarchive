@@ -41,14 +41,6 @@ at_twuser_file = Table(
            ForeignKey("files.id"), primary_key=True),
     info="Association table for mapping users to files and vice versa.")
 
-at_deviation_tag = Table(
-    'at_deviation_tag', Base.metadata,
-    Column("deviation_id", Integer,
-           ForeignKey("deviations.id"), primary_key=True),
-    Column(
-        "tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
-    info="Association table for mapping deviations to tags and vice versa.")
-
 at_ytvideo_tag = Table(
     "at_yt_video_tag", Base.metadata,
     Column("yt_video_id", Integer,
@@ -67,11 +59,23 @@ at_person_file = Table(
     Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
     info="Association table for mapping people to files and vice versa.")
 
+at_memory_file = Table(
+    'at_memory_file', Base.metadata,
+    Column("memory_id", Integer, ForeignKey("memories.id"), primary_key=True),
+    Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
+    info="Association table for mapping messages to files and vice versa.")
+
 at_memory_tag = Table(
     'at_memory_tag', Base.metadata,
     Column("memory_id", Integer, ForeignKey("memories.id"), primary_key=True),
     Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
     info="Association table for mapping memories to tags and vice versa.")
+
+at_message_file = Table(
+    'at_message_file', Base.metadata,
+    Column("message_id", Integer, ForeignKey("messages.id"), primary_key=True),
+    Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
+    info="Association table for mapping messages to files and vice versa.")
 
 at_message_tag = Table(
     'at_message_tag', Base.metadata,
