@@ -7,7 +7,7 @@
 # @License MIT
 
 from myarchive.db.tag_db.tables.association_tables import (
-    at_ljcomment_tag, at_ljentry_tag)
+    at_post_tag, at_comment_tag)
 from myarchive.db.tag_db.tables.base import Base
 from sqlalchemy import (
     Column, Integer, String, TIMESTAMP, ForeignKey, UniqueConstraint)
@@ -29,16 +29,16 @@ class Post(Base):
     subject = Column(String)
     text = Column(String)
     current_music = Column(String)
-    user_id = Column(Integer, ForeignKey("lj_users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     __table_args__ = (
         UniqueConstraint(itemid, user_id),
     )
 
     comments = relationship(
-        "LJComment",
+        "Comment",
         backref=backref(
-            "lj_entry",
+            "post",
             doc="Entry this comment belongs to.",
             uselist=False),
         doc="Comments on this entry.",
@@ -49,7 +49,7 @@ class Post(Base):
             "lj_entries",
             doc="Entries associated with this tag"),
         doc="Tags that have been applied to this LJ entry.",
-        secondary=at_ljentry_tag
+        secondary=at_post_tag
     )
 
     def __init__(self, itemid, eventtime, subject, text, current_music):
@@ -82,29 +82,29 @@ class Comment(Base):
     __tablename__ = 'comments'
 
     id = Column(Integer, index=True, primary_key=True)
-    itemid = Column(Integer)
-    entry_id = Column(Integer, ForeignKey("lj_entries.id"))
-    user_id = Column(Integer, ForeignKey("lj_users.id"))
+    item_id = Column(Integer)
+    post_id = Column(Integer, ForeignKey("posts.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
     subject = Column(String)
     body = Column(String)
     date = Column(TIMESTAMP)
-    parent_id = Column(Integer, ForeignKey("lj_comments.id"))
+    parent_id = Column(Integer, ForeignKey("comments.id"))
 
     __table_args__ = (
-        UniqueConstraint(itemid, entry_id, user_id),
+        UniqueConstraint(item_id, post_id, user_id),
     )
 
     children = relationship(
-        "LJComment",
+        "Comment",
         backref=backref('parent_comment', remote_side=[id])
     )
     tags = relationship(
         "Tag",
         backref=backref(
-            "lj_comments",
+            "comments",
             doc="Entries associated with this tag"),
         doc="Tags that have been applied to this entry.",
-        secondary=at_ljcomment_tag
+        secondary=at_comment_tag
     )
 
     def __init__(self, itemid, subject, body, date):

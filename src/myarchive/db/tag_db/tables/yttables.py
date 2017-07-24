@@ -63,7 +63,7 @@ class YTVideo(Base):
     duration = Column(String)
     publish_time = Column(DateTime)
     videoid = Column(String)
-    playlist_id = Column(Integer, ForeignKey("ytplaylists.id"), nullable=True)
+    playlist_id = Column(Integer, ForeignKey("yt_playlists.id"), nullable=True)
     file_id = Column(Integer, ForeignKey("files.id"))
 
     file = relationship(
@@ -74,7 +74,7 @@ class YTVideo(Base):
     tags = relationship(
         "Tag",
         backref=backref(
-            "ytvideos",
+            "yt_videos",
             doc="Deviations associated with this tag"),
         doc="Tags that have been applied to this deviation.",
         secondary=at_ytvideo_tag,

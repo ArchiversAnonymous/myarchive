@@ -40,6 +40,7 @@ class User(Base):
     service_url = Column(String)
 
     # User information.
+    user_id = Column(String)
     user_name = Column(String)
     display_name = Column(String)
     url = Column(String)
@@ -55,41 +56,43 @@ class User(Base):
         secondary=at_user_file,
     )
 
-    def __init__(self, user_dict):
-        self.id = int(user_dict["id"])
-        self.name = user_dict["name"]
-        self.screen_name = user_dict["screen_name"]
-        self.url = user_dict.get("url")
-        self.description = user_dict.get("description")
-        self.created_at = user_dict["created_at"]
-        self.location = user_dict.get("location")
-        self.time_zone = user_dict.get("time_zone")
-        self.profile_sidebar_fill_color = user_dict[
-            "profile_sidebar_fill_color"]
-        self.profile_text_color = user_dict[
-            "profile_text_color"]
-        self.profile_background_color = user_dict[
-            "profile_background_color"]
-        self.profile_link_color = user_dict[
-            "profile_link_color"]
-        self.profile_image_url = user_dict.get(
-            "profile_image_url")
-        self.profile_banner_url = user_dict.get(
-            "profile_banner_url")
-        self.profile_background_image_url = user_dict.get(
-            "profile_background_image_url")
+    def __init__(self, service_name, service_url, user_id, user_name,
+                 display_name=None, url=None, description=None, location=None,
+                 time_zone=None, created_at=None):
+        self.service_name = service_name
+        self.service_url = service_url
+        self.user_id = user_id
+        self.user_name = user_name
+        self.display_name = display_name
+        self.url = url
+        self.description = description
+        self.location = location
+        self.time_zone = time_zone
+        self.created_at = created_at
 
     def __repr__(self):
         return (
-            "<TwitterUser(id='%s', name='%s' screen_name='%s')>" %
-            (self.id, self.name, self.screen_name))
+            "<%s(%r)>" % (self.__class__.__name__, self.__dict__))
 
     @classmethod
-    def get_user(cls, db_session, user_id, username):
-        try:
-            user = db_session.query(cls).filter_by(user_id=user_id).one()
-        except NoResultFound:
-            user = cls(user_id=user_id, username=username)
+    def find_user(cls, db_session,
+                  service_name, service_url, user_id, username):
+        if user_id is not None:
+            try:
+                user = db_session.query(cls).\
+                    filter_by(service_name=service_name). \
+                    filter_by(service_url=service_url). \
+                    filter_by(user_id=user_id).one()
+            except NoResultFound:
+                return None
+        else:
+            try:
+                user = db_session.query(cls). \
+                    filter_by(service_name=service_name). \
+                    filter_by(service_url=service_url). \
+                    filter_by(username=username).one()
+            except NoResultFound:
+                return None
         return user
 
     def download_media(self, db_session, media_path):

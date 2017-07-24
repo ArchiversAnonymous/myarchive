@@ -27,24 +27,6 @@ at_tweet_tag = Table(
     Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
     info="Association table for mapping tweets to tags and vice versa.")
 
-at_ljcomment_tag = Table(
-    'at_ljcomment_tag', Base.metadata,
-    Column(
-        "lj_comment_id", Integer, ForeignKey("lj_comments.id"),
-        primary_key=True),
-    Column(
-        "tag_id", Integer, ForeignKey("tags.tag_id"),
-        primary_key=True),
-    info="Association table for mapping LJ comments to tags and vice versa.")
-
-at_ljentry_tag = Table(
-    'at_ljentry_tag', Base.metadata,
-    Column(
-        "lj_entry_id", Integer, ForeignKey("lj_entries.id"), primary_key=True),
-    Column(
-        "tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
-    info="Association table for mapping LJ entries to tags and vice versa.")
-
 at_tweet_file = Table(
     'at_tweet_file', Base.metadata,
     Column("tweet_id", Integer, ForeignKey("tweets.id"), primary_key=True),
@@ -68,9 +50,9 @@ at_deviation_tag = Table(
     info="Association table for mapping deviations to tags and vice versa.")
 
 at_ytvideo_tag = Table(
-    "at_ytvideo_tag", Base.metadata,
-    Column("ytvideo_id", Integer,
-           ForeignKey("ytvideos.id"), primary_key=True),
+    "at_yt_video_tag", Base.metadata,
+    Column("yt_video_id", Integer,
+           ForeignKey("yt_videos.id"), primary_key=True),
     Column(
         "tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
     info="Association table for mapping youtube videos to tags and vice versa.")
@@ -81,6 +63,18 @@ at_ytvideo_tag = Table(
 
 at_user_file = Table(
     'at_user_file', Base.metadata,
-    Column("user_id", Integer, ForeignKey("tweets.id"), primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
     Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
     info="Association table for mapping users to files and vice versa.")
+
+at_post_tag = Table(
+    'at_post_tag', Base.metadata,
+    Column("post_id", Integer, ForeignKey("posts.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
+    info="Association table for mapping posts to tags and vice versa.")
+
+at_comment_tag = Table(
+    'at_comment_tag', Base.metadata,
+    Column("comment_id", Integer, ForeignKey("comments.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
+    info="Association table for mapping comments to tags and vice versa.")

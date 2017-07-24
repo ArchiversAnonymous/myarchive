@@ -33,7 +33,7 @@ HASHTAG_REGEX = r'#([\d\w]+)'
 class Tweet(Base):
     """Class representing a file tweet by the database."""
 
-    __tablename__ = 'twitter_statuses'
+    __tablename__ = 'tweets'
 
     id = Column(Integer, index=True, primary_key=True)
     text = Column(String)

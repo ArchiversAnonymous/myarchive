@@ -15,8 +15,8 @@ from myarchive.libs.livejournal.backup import (
     datetime_from_string)
 from sqlalchemy.orm.exc import NoResultFound
 
-from myarchive.db.tag_db.tables.post import (
-    LJComment, LJEntry, LJHost, LJUser)
+from myarchive.db.tag_db.tables.user import User
+from myarchive.db.tag_db.tables.post import Post
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 
 class LJAPIConnection(object):
 
-    def __init__(self, db_session, host, user_agent, username, password):
+    def __init__(self, host, user_agent, username, password):
         """
         WARNING: MUST use HTTPS since this API uses *md5sum* for
         authentication! D:
@@ -42,12 +42,6 @@ class LJAPIConnection(object):
         self.journal['login'] = self.login = self._server.login(
             user=username,
             password=password)
-        try:
-            self.ljhost = db_session.query(LJHost).filter_by(url=host).one()
-        except NoResultFound:
-            self.ljhost = LJHost(url=host)
-            db_session.add(self.ljhost)
-            db_session.commit()
 
     def post_journal(self, subject, post, tags):
         """
@@ -72,7 +66,7 @@ class LJAPIConnection(object):
         #     server=self._server, journal=self.journal)
 
         # print("Updated %d entries and %d comments" % (nj, nc))
-        print(self.journal['login'])
+        # print(self.journal['login'])
 
         users = {
             int(self.journal['login']["userid"]):
@@ -85,19 +79,30 @@ class LJAPIConnection(object):
         poster = None
         lj_users = dict()
         for user_id, username in users.items():
-            ljuser = LJUser.get_user(
-                db_session=db_session, user_id=user_id, username=username)
-            self.ljhost.users.append(ljuser)
-            lj_users[user_id] = ljuser
+            lj_user = User.find_user(
+                db_session=db_session,
+                service_name="LJ",
+                service_url=self._server.host,
+                user_id=user_id,
+                username=username)
+            if lj_user is None:
+                lj_user = User(
+                    service_name="LJ",
+                    service_url=self._server.host,
+                    user_id=user_id,
+                    user_name=username,
+                )
+                db_session.add(lj_user)
+            lj_users[user_id] = lj_user
             if user_id == int(self.journal['login']["userid"]):
-                poster = ljuser
+                poster = lj_user
         db_session.commit()
 
         lj_entries = dict()
         for entry_id, entry in self.journal["entries"].items():
             LOGGER.critical(entry)
             LOGGER.critical(entry["event"])
-            lj_entry = LJEntry.get_or_add_entry(
+            lj_entry = Post.get_or_add_entry(
                 db_session=db_session,
                 lj_user=poster,
                 itemid=entry_id,
@@ -121,7 +126,7 @@ class LJAPIConnection(object):
         #         date=datetime.strptime(comment["date"], "%Y-%m-%dT%H:%M:%SZ"),
         #         parent_id=comment["parentid"]
         #     )
-        db_session.commit()
+        # db_session.commit()
 
 
 def download_journals_and_comments(config, db_session):
@@ -130,7 +135,6 @@ def download_journals_and_comments(config, db_session):
             LOGGER.info(config.get(section=config_section, option="host"))
             LOGGER.info(config.get(section=config_section, option="username"))
             ljapi = LJAPIConnection(
-                db_session=db_session,
                 host=config.get(
                     section=config_section, option="host"),
                 user_agent=config.get(
