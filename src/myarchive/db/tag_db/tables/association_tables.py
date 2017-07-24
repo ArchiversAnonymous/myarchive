@@ -74,3 +74,13 @@ at_ytvideo_tag = Table(
     Column(
         "tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
     info="Association table for mapping youtube videos to tags and vice versa.")
+
+
+
+
+
+at_user_file = Table(
+    'at_user_file', Base.metadata,
+    Column("user_id", Integer, ForeignKey("tweets.id"), primary_key=True),
+    Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
+    info="Association table for mapping users to files and vice versa.")
