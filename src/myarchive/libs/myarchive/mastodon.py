@@ -25,12 +25,11 @@ def download_toots(db_session, media_storage_path, config):
         if config_section.startswith("Mastodon_"):
             host = config.get(section=config_section, option="host")
             username = config.get(section=config_section, option="username")
+            LOGGER.info("Grabbing toots for %s [%s]...", username, host)
             try:
                 password = config.get(section=config_section, option="password")
             except NoOptionError:
                 password = getpass.getpass()
-
-            LOGGER.critical([host, username, password])
 
             mastodon_api = Mastodon(
                 client_id=APP_SECRET_PATH,
@@ -42,7 +41,11 @@ def download_toots(db_session, media_storage_path, config):
             )
             user = mastodon_api.account_verify_credentials()
             mastodon_user = Person(
-
+                service_name="Mastodon",
+                service_url=host,
+                user_id=user["id"],
+                username=username,
+                user_dict=user,
             )
             db_session.add(mastodon_user)
             db_session.commit()
@@ -52,40 +55,34 @@ def download_toots(db_session, media_storage_path, config):
                 id=user["id"], max_id=None, since_id=None, limit=None)
             while results_page is not None:
                 for status_dict in results_page:
-                    media_urls_list = []
-                    for media_dict in status_dict.get(
-                            "media_attachments", list()):
-                        media_urls_list.append(media_dict["url"])
+                    # media_urls_list = []
+                    # for media_dict in status_dict.get(
+                    #         "media_attachments", list()):
+                    #     media_urls_list.append(media_dict["url"])
                     status = Memory(
-                        id=status_dict["id"],
-                        text=status_dict["content"],
-                        in_reply_to_status_id=status_dict["in_reply_to_id"],
-                        created_at=status_dict["created_at"],
-                        media_urls_list=media_urls_list,
+                        service_memory_id=status_dict["id"],
+                        memory_dict=status_dict,
+                        type_="toot",
                     )
-                    mastodon_user.statuses.add(status)
-                    db_session.add(status)
+                    mastodon_user.memories.append(status)
                 db_session.commit()
                 results_page = mastodon_api.fetch_next(
                     previous_page=results_page)
 
-            # Fetch user favorites.
-            results_page = mastodon_api.favourites(
-                max_id=None, since_id=None, limit=None)
-            while results_page is not None:
-                for status_dict in results_page:
-                    media_urls_list = []
-                    for media_dict in status_dict.get(
-                            "media_attachments", list()):
-                        media_urls_list.append(media_dict["url"])
-                    status = Memory(
-                        id=status_dict["id"],
-                        text=status_dict["content"],
-                        in_reply_to_status_id=status_dict["in_reply_to_id"],
-                        created_at=status_dict["created_at"],
-                        media_urls_list=media_urls_list,
-                    )
-                    db_session.add(status)
-                db_session.commit()
-                results_page = mastodon_api.fetch_next(
-                    previous_page=results_page)
+            # # Fetch user favorites.
+            # results_page = mastodon_api.favourites(
+            #     max_id=None, since_id=None, limit=None)
+            # while results_page is not None:
+            #     for status_dict in results_page:
+            #         # media_urls_list = []
+            #         # for media_dict in status_dict.get(
+            #         #         "media_attachments", list()):
+            #         #     media_urls_list.append(media_dict["url"])
+            #         status = Memory(
+            #             service_memory_id=status_dict["id"],
+            #             memory_dict=status_dict,
+            #         )
+            #         db_session.add(status)
+            #     db_session.commit()
+            #     results_page = mastodon_api.fetch_next(
+            #         previous_page=results_page)

@@ -49,6 +49,10 @@ class Person(Base):
     # Useful flag.
     files_downloaded = Column(Boolean, default=False)
 
+    memories = relationship(
+        "Memory",
+        doc="Memories associated with this user.",
+    )
     files = relationship(
         "TrackedFile",
         doc="Files associated with this user.",

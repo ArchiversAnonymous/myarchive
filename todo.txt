@@ -13,7 +13,8 @@ Genericize DB:
     Memories (Deviation, LJ/DW Post, Toot, Tweet, YoutubeVideo)
         - (PK, FK) User ID
         - (PK) Post ID
-        - Text Content
+        - Title
+        - Description
         - Creation Date
         - Files
         - etc...
@@ -22,6 +23,7 @@ Genericize DB:
 
 
 
+Fix Mastodon, Twitter, DW, Youtube, DA
 
 
 

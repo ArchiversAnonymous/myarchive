@@ -24,10 +24,18 @@ class Memory(Base):
     __tablename__ = 'memories'
 
     id = Column(Integer, index=True, primary_key=True)
-    service_memory_id = Column(String)
+    service_memory_id = Column(
+        String,
+        doc="The service instance's GUID for this object."
+    )
+    type_ = Column(
+        String,
+        doc="The type of memory we are storing."
+    )
     memory_dict = Column(json_type)
     user_id = Column(Integer, ForeignKey("people.id"))
 
+    # These two keep things unique.
     __table_args__ = (
         UniqueConstraint(service_memory_id, user_id),
     )
@@ -61,9 +69,10 @@ class Memory(Base):
     def tag_names(self):
         return [tag.name for tag in self.tags]
 
-    def __init__(self, service_memory_id, **kwargs):
+    def __init__(self, service_memory_id, type_, memory_dict):
         self.service_memory_id = service_memory_id
-        self.memory_dict = kwargs
+        self.type_ = type_
+        self.memory_dict = memory_dict
 
 
 class Message(Base):
@@ -112,20 +121,20 @@ class Message(Base):
         self.date = date
 
     @classmethod
-    def get_or_add_comment(
+    def get_or_add_child(
             cls, db_session, lj_user, lj_entry, itemid, subject, body, date,
             parent_id):
         try:
-            lj_comment = db_session.query(cls).filter_by(itemid=itemid).one()
+            child = db_session.query(cls).filter_by(itemid=itemid).one()
         except NoResultFound:
-            lj_comment = cls(itemid, subject, body, date)
-        lj_user.comments.append(lj_comment)
-        lj_entry.comments.append(lj_comment)
+            child = cls(itemid, subject, body, date)
+        lj_user.comments.append(child)
+        lj_entry.comments.append(child)
         if parent_id:
             parent_comment = db_session.query(cls). \
                 filter_by(itemid=int(parent_id)).one()
-            parent_comment.add_child(lj_comment)
-        return lj_comment
+            parent_comment.add_child(child)
+        return child
 
     def add_child(self, lj_comment):
         """Creates an instance, performing a safety check first."""
