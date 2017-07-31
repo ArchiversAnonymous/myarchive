@@ -99,17 +99,14 @@ class LJAPIConnection(object):
         for entry_id, entry in self.journal["entries"].items():
             LOGGER.critical(entry)
             LOGGER.critical(entry["event"])
-            lj_entry = Memory.get_or_add_entry(
+            lj_entry = Memory.find_or_create(
                 db_session=db_session,
-                lj_user=poster,
-                itemid=entry_id,
-                eventtime=datetime_from_string(entry["eventtime"]),
-                subject=entry["subject"],
-                text=str(entry["event"]),
-                current_music=entry["props"].get("current_music"),
-                tag_list=entry["props"].get("taglist")
+                service_id=service.id,
+                service_uuid=entry_id,
+                memory_dict=entry,
             )
             lj_entries[entry_id] = lj_entry
+            poster.posts.append(lj_entry)
         db_session.commit()
 
         # for comment_id, comment in self.journal["comments"].items():
