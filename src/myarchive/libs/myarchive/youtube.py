@@ -73,7 +73,7 @@ def download_youtube_playlists(db_session, media_storage_path, playlist_urls):
                     description=video.description,
                     duration=video.duration,
                     publish_time=datetime.strptime(
-                        video.published, "%Y-%m-%d %H:%M:%S"    ),
+                        video.published, "%Y-%m-%d %H:%M:%S"),
                     videoid=video.videoid
                 )
                 db_playlist.videos.append(ytvideo)

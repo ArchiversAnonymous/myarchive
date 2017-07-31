@@ -27,7 +27,7 @@ Genericize DB:
         - (FK) Post ID
 
 
-Fix Twitter, DW, Youtube
+Fix Twitter, Youtube
 
 
 
