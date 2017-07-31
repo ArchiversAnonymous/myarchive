@@ -6,7 +6,7 @@ from configparser import NoOptionError
 
 from myarchive.libs.mastodon import Mastodon
 from myarchive.util.lib import CONFIG_FOLDER
-from myarchive.db.tag_db.tables import User, Memory, TrackedFile
+from myarchive.db.tag_db.tables import Service, User, Memory, TrackedFile
 
 LOGGER = logging.getLogger(__name__)
 APP_SECRET_PATH = os.path.join(CONFIG_FOLDER, "mastodon.app.secret")
@@ -44,10 +44,16 @@ def download_toots(db_session, media_storage_path, config):
             service_name = "mastodon"
             service_url = host
             user_id = user_dict["id"]
-            mastodon_user = User.find_or_create(
+
+            service, unused_existing = Service.find_or_create(
                 db_session=db_session,
                 service_name=service_name,
                 service_url=service_url,
+            )
+
+            mastodon_user, unused_existing = User.find_or_create(
+                db_session=db_session,
+                service_id=service.id,
                 user_id=user_id,
                 username=username,
             )
@@ -57,10 +63,10 @@ def download_toots(db_session, media_storage_path, config):
                 id=user_id, max_id=None, since_id=None, limit=None)
             while results_page is not None:
                 for status_dict in results_page:
-                    service_memory_id = status_dict["id"]
                     memory, existing = Memory.find_or_create(
                         db_session=db_session,
-                        service_memory_id=service_memory_id,
+                        service_id=service.id,
+                        service_uuid=str(status_dict["id"]),
                         memory_dict=status_dict,
                     )
                     if existing is True:
@@ -87,10 +93,10 @@ def download_toots(db_session, media_storage_path, config):
                 max_id=None, since_id=None, limit=None)
             while results_page is not None:
                 for status_dict in results_page:
-                    service_memory_id = status_dict["id"]
                     memory, unused_existing = Memory.find_or_create(
                         db_session=db_session,
-                        service_memory_id=service_memory_id,
+                        service_id=service.id,
+                        service_uuid=str(status_dict["id"]),
                         memory_dict=status_dict,
                     )
                     if memory not in mastodon_user.favorites:

@@ -1,26 +1,33 @@
 Genericize DB:
-    Users
+    Service
         - (PK) ID
         - Service Name
         - Service URL
+    Users
+        - (PK) ID
         - User ID
         - Username
         - Display Name
         - Creation Date
         - Files
+        - FK (Service ID)
     Memories (Deviation, LJ/DW Post, Toot, Tweet, YoutubeVideo)
-        - (PK, FK) User ID
-        - (PK) Post ID
+        - (PK) ID
+        - Post ID
+        - JSON
         - Title
         - Description
         - Creation Date
         - Files
         - etc...
+        - (FK) Service ID
+        - (FK) User ID
+
     Messages
         - (FK) Post ID
 
 
-Hash of memory fields (User ID, ) as unique ID?
+Hash isn't going to work.
 
 Fix Mastodon, Twitter, DW, Youtube, DA
 

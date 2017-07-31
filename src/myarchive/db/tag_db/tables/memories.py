@@ -28,12 +28,12 @@ class Memory(Base):
     __tablename__ = 'memories'
 
     id = Column(Integer, index=True, primary_key=True)
-    service_memory_id = Column(
+    service_uuid = Column(
         String,
         doc="The service instance's GUID for this object."
     )
-    memory_hash = Column(String, unique=True)
     memory_dict = Column(json_type)
+    service_id = Column(Integer, ForeignKey("services.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
 
     files = relationship(
@@ -65,34 +65,23 @@ class Memory(Base):
     def tag_names(self):
         return [tag.name for tag in self.tags]
 
-    def __init__(self, service_memory_id, memory_hash, memory_dict):
-        self.service_memory_id = service_memory_id
-        self.memory_hash = memory_hash
+    def __init__(self, service_uuid, memory_dict):
+        self.service_uuid = service_uuid
         self.memory_dict = memory_dict
 
     @classmethod
-    def find_or_create(cls, db_session, service_memory_id, memory_dict):
-
-        # Populate the hash set if necessary
-        global EXISTING_HASHES
-        if not EXISTING_HASHES:
-            EXISTING_HASHES = set([
-                memory_tuple[0] for memory_tuple in
-                db_session.query(Memory.memory_hash).all()
-            ])
-
-        memory_hash = sha256(str(memory_dict).encode('utf-8')).hexdigest()
-        if memory_hash not in EXISTING_HASHES:
-            EXISTING_HASHES.add(memory_hash)
+    def find_or_create(cls, db_session, service_id, service_uuid, memory_dict):
+        try:
+            memory = db_session.query(cls).\
+                filter_by(service_uuid=service_uuid).\
+                filter_by(service_id=service_id).one()
+            existing = True
+        except NoResultFound:
             memory = cls(
-                service_memory_id=service_memory_id,
-                memory_hash=memory_hash,
+                service_uuid=service_uuid,
                 memory_dict=memory_dict)
-            db_session.add(memory)
-            return memory, False
-        else:
-            return db_session.query(Memory).\
-                filter_by(memory_hash=memory_hash).one(), True
+            existing = False
+        return memory, existing
 
 
 class Message(Base):
