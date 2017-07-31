@@ -7,6 +7,7 @@
     :copyright: (c) 2015 by Kevin Eichhorn
 """
 
+
 class User(object):
 
 	def __init__(self):

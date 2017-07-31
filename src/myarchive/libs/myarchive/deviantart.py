@@ -53,7 +53,7 @@ def download_user_data(database, config, media_storage_path):
 
             # Grab user data.
             LOGGER.info("Pulling data for user: %s...", username)
-            get_da_user(
+            synced_da_user = get_da_user(
                 db_session=database.session,
                 da_api=da_api,
                 service_id=service.id,
@@ -64,6 +64,8 @@ def download_user_data(database, config, media_storage_path):
                 __download_user_deviations(
                     database=database,
                     da_api=da_api,
+                    service_id=service.id,
+                    synced_da_user=synced_da_user,
                     username=username,
                     sync_type=sync_type,
                     media_storage_path=media_storage_path,
@@ -71,8 +73,8 @@ def download_user_data(database, config, media_storage_path):
 
 
 def __download_user_deviations(
-        database, media_storage_path, da_api, username, sync_type,
-        force_full_scan=False):
+        database, media_storage_path, da_api, service_id, synced_da_user,
+        username, sync_type, force_full_scan=False):
 
     if sync_type == GALLERY:
         collections = da_api.get_gallery_folders(username=username)
@@ -86,10 +88,6 @@ def __download_user_deviations(
         LOGGER.info("Scanning %s (%s) for deviations...",
                     sync_type, collection_name)
         folderid = collection["folderid"]
-
-        # Grab list of existing deviationids.
-        query_results = database.session.query(Memory.service_memory_id).all()
-        existing_deviationids = [item for (item,) in query_results]
 
         deviations = []
         offset = 0
@@ -112,12 +110,6 @@ def __download_user_deviations(
                 # fetch (if yes => repeat)
                 has_more = fetched_deviations['has_more']
 
-                # Normally, we only check
-                if force_full_scan is False:
-                    for deviation in fetched_deviations["results"]:
-                        if deviation.deviationid in existing_deviationids:
-                            break
-
             except deviantart.api.DeviantartError as error:
                 # catch and print API exception and stop loop
                 LOGGER.error("Error querying DA API for collection: %s" % error)
@@ -125,8 +117,7 @@ def __download_user_deviations(
 
         new_deviations = []
         for deviation in deviations:
-            if deviation.deviationid not in existing_deviationids:
-                new_deviations.append(deviation)
+            new_deviations.append(deviation)
         LOGGER.info(
             "%s new deviations found. Downloading...", len(new_deviations))
 
@@ -145,7 +136,7 @@ def __download_user_deviations(
             da_users_by_username[deviation.author.username] = get_da_user(
                 db_session=database.session,
                 da_api=da_api,
-                service_id=service.id,
+                service_id=service_id,
                 username=deviation.author.username,
                 media_storage_path=media_storage_path)
 
@@ -201,32 +192,25 @@ def __download_user_deviations(
 
             # Create the Deviation DB entry. If we already have it, skip all
             # this madness.
-            try:
-                database.session.query(Memory).\
-                    filter_by(service_memory_id=str(deviation.deviationid)).one()
-                continue
-            except NoResultFound:
-                memory = Memory(
-                    title=deviation.title,
-                    description=deviation_metadata["description"],
-                    service_memory_id=deviation.deviationid,
-                )
-                da_users_by_username[deviation.author.username].memories.\
-                    append(memory)
+            deviation_dict = deviation.__dict__
+            deviation_dict["metadata"] = deviation_metadata
+            memory, existing = Memory.find_or_create(
+                db_session=database.session,
+                service_id=service_id,
+                service_uuid=str(deviation.deviationid),
+                memory_dict=deviation.__dict__,
+            )
+            if existing is False:
+                da_users_by_username[deviation.author.username].\
+                    posts.append(memory)
+                if sync_type == FAVORITES:
+                    synced_da_user.favorites.append(memory)
                 memory.files.append(tracked_file)
-                database.session.add(memory)
+            database.session.commit()
 
-            # Handle tags, category, and author tags.
-            if sync_type == GALLERY:
-                sync_type_tag_name = "gallery"
-            else:
-                sync_type_tag_name = "favorite"
+            # Handle tags.
             tags_names = [
-                "da.user.%s.%s" % (username, sync_type_tag_name),
-                "da.user.%s.%s.%s" % (
-                    username, sync_type_tag_name, collection_name),
-                "da.author." + str(deviation.author),
-                collection_name,
+                "deviantart", str(deviation.author), collection_name,
             ]
             tags_names.extend(str(deviation.category_path).split("/"))
             tags_names.extend(
@@ -245,8 +229,8 @@ def __download_user_deviations(
                     existing_tags_by_name[tag_name] = tag
                 if tag_name not in tracked_file.tag_names:
                     tracked_file.tags.append(tag)
-                if tag_name not in db_deviation.tag_names:
-                    db_deviation.tags.append(tag)
+                if tag_name not in memory.tag_names:
+                    memory.tags.append(tag)
 
             database.session.commit()
 
@@ -267,16 +251,17 @@ def get_da_user(db_session, da_api, service_id, username, media_storage_path):
     )
     if existing is False:
         try:
-            user = da_api.get_user(username=username)
+            user_obj = da_api.get_user(username=username)
         except DeviantartError:
             LOGGER.error("Unable to obtain user data for %s", username)
-            return None
-        da_user.user_dict = user.__dict__
+            return da_user
+        da_user.user_id = user_obj.userid
+        da_user.user_dict = user_obj.__dict__
         icon_file, existing = TrackedFile.download_file(
             file_source="deviantart",
             db_session=db_session,
             media_path=media_storage_path,
-            url=user.usericon)
+            url=user_obj.usericon)
         da_user.icon = icon_file
         db_session.add(da_user)
         db_session.commit()
