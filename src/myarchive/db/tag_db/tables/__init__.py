@@ -11,6 +11,6 @@
 from .base import Base, json_type
 from .file import TrackedFile
 from .tag import Tag
-from .person import Person
+from .user import User
 from .twittertables import Tweet, TwitterUser
 from .memories import Memory, Message

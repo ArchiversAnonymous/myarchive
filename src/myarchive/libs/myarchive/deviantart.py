@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.libs.deviantart.api import DeviantartError
 from myarchive.libs import deviantart
-from myarchive.db.tag_db.tables import Memory, Tag, TrackedFile, Person
+from myarchive.db.tag_db.tables import Memory, Tag, TrackedFile, User
 
 LOGGER = logging.getLogger(__name__)
 
@@ -249,7 +249,7 @@ def get_da_user(db_session, da_api, username, media_storage_path):
     """
 
     # Grab the User object from the API.
-    da_user = Person.find_user(
+    da_user = User.find_user(
         db_session=db_session,
         service_name="deviantart",
         service_url="https://deviantart.com",
@@ -261,7 +261,7 @@ def get_da_user(db_session, da_api, username, media_storage_path):
         except DeviantartError:
             LOGGER.error("Unable to obtain user data for %s", username)
             return None
-        da_user = Person(
+        da_user = User(
             service_name="deviantart",
             service_url="https://deviantart.com",
             user_id=user.userid,

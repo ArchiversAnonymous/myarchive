@@ -28,12 +28,8 @@ class Memory(Base):
         String,
         doc="The service instance's GUID for this object."
     )
-    type_ = Column(
-        String,
-        doc="The type of memory we are storing."
-    )
     memory_dict = Column(json_type)
-    user_id = Column(Integer, ForeignKey("people.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
 
     # These two keep things unique.
     __table_args__ = (
@@ -69,9 +65,8 @@ class Memory(Base):
     def tag_names(self):
         return [tag.name for tag in self.tags]
 
-    def __init__(self, service_memory_id, type_, memory_dict):
+    def __init__(self, service_memory_id, memory_dict):
         self.service_memory_id = service_memory_id
-        self.type_ = type_
         self.memory_dict = memory_dict
 
 
@@ -83,7 +78,7 @@ class Message(Base):
     id = Column(Integer, index=True, primary_key=True)
     item_id = Column(Integer)
     post_id = Column(Integer, ForeignKey("memories.id"))
-    user_id = Column(Integer, ForeignKey("people.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
     subject = Column(String)
     body = Column(String)
     date = Column(TIMESTAMP)

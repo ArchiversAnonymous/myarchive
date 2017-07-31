@@ -1,11 +1,9 @@
 Genericize DB:
-    Service
-        - (PK) id
-        - (Unique) Service Name
-        - (Unique) Host
     Users
-        - (PK, FK) Service
-        - (PK) User ID
+        - (PK) ID
+        - Service Name
+        - Service URL
+        - User ID
         - Username
         - Display Name
         - Creation Date
@@ -22,7 +20,7 @@ Genericize DB:
         - (FK) Post ID
 
 
-
+Users must be able to own and favorite a memory.
 Fix Mastodon, Twitter, DW, Youtube, DA
 
 

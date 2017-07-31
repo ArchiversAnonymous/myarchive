@@ -15,7 +15,7 @@ from myarchive.libs.livejournal.backup import (
     datetime_from_string)
 from sqlalchemy.orm.exc import NoResultFound
 
-from myarchive.db.tag_db.tables.person import Person
+from myarchive.db.tag_db.tables import User
 from myarchive.db.tag_db.tables import Memory
 
 
@@ -81,14 +81,14 @@ class LJAPIConnection(object):
         poster = None
         lj_users = dict()
         for user_id, username in users.items():
-            lj_user = Person.find_user(
+            lj_user = User.find_user(
                 db_session=db_session,
                 service_name="LJ",
                 service_url=self._server.host,
                 user_id=user_id,
                 username=username)
             if lj_user is None:
-                lj_user = Person(
+                lj_user = User(
                     service_name="LJ",
                     service_url=self._server.host,
                     user_id=user_id,

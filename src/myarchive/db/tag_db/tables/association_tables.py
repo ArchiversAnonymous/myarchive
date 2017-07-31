@@ -53,11 +53,18 @@ at_ytvideo_tag = Table(
 
 
 
-at_person_file = Table(
-    'at_person_file', Base.metadata,
-    Column("person_id", Integer, ForeignKey("people.id"), primary_key=True),
+at_user_favorite = Table(
+    'at_user_favorite', Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("memory_id", Integer, ForeignKey("memories.id"), primary_key=True),
+    info="Association table for mapping users to their favorite memories and "
+         "vice versa.")
+
+at_user_file = Table(
+    'at_user_file', Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
     Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
-    info="Association table for mapping people to files and vice versa.")
+    info="Association table for mapping users to files and vice versa.")
 
 at_memory_file = Table(
     'at_memory_file', Base.metadata,

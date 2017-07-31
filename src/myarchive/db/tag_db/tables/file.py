@@ -35,6 +35,7 @@ FILE_SOURCE_PRIORITIES = {
     "deviantart": 5,
     "youtube": 4,
     "twitter": 3,
+    "mastodon": 3,
     "shotwell": 2,
     "file_import": 1,
     None: 0,
