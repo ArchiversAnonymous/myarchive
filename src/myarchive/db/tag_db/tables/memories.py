@@ -65,9 +65,10 @@ class Memory(Base):
     def tag_names(self):
         return [tag.name for tag in self.tags]
 
-    def __init__(self, service_uuid, memory_dict):
+    def __init__(self, service_uuid, memory_dict, service_id):
         self.service_uuid = service_uuid
         self.memory_dict = memory_dict
+        self.service_id = service_id
 
     @classmethod
     def find_or_create(cls, db_session, service_id, service_uuid, memory_dict):
@@ -79,7 +80,8 @@ class Memory(Base):
         except NoResultFound:
             memory = cls(
                 service_uuid=service_uuid,
-                memory_dict=memory_dict)
+                memory_dict=memory_dict,
+                service_id=service_id)
             existing = False
         return memory, existing
 
