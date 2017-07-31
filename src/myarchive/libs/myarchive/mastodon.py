@@ -52,27 +52,20 @@ def download_toots(db_session, media_storage_path, config):
                 username=username,
             )
 
-            # Query for existing toots.
-            existing_user_memory_ids = [
-                memory_tuple[0] for memory_tuple in
-                db_session.query(Memory.service_memory_id).
-                filter_by(user_id=mastodon_user.id)
-            ]
-
             # Fetch user toots.
             results_page = mastodon_api.account_statuses(
                 id=user_id, max_id=None, since_id=None, limit=None)
             while results_page is not None:
                 for status_dict in results_page:
                     service_memory_id = status_dict["id"]
-                    if str(service_memory_id) in existing_user_memory_ids:
-                        results_page = None
-                        break
-                    memory = Memory.find_or_create(
+                    memory, existing = Memory.find_or_create(
                         db_session=db_session,
                         service_memory_id=service_memory_id,
                         memory_dict=status_dict,
                     )
+                    if existing is True:
+                        results_page = None
+                        break
                     if memory.user_id is None:
                         mastodon_user.posts.append(memory)
                     for media_dict in status_dict.get(
@@ -95,9 +88,7 @@ def download_toots(db_session, media_storage_path, config):
             while results_page is not None:
                 for status_dict in results_page:
                     service_memory_id = status_dict["id"]
-                    if service_memory_id in existing_user_memory_ids:
-                        break
-                    memory = Memory.find_or_create(
+                    memory, unused_existing = Memory.find_or_create(
                         db_session=db_session,
                         service_memory_id=service_memory_id,
                         memory_dict=status_dict,
@@ -112,5 +103,6 @@ def download_toots(db_session, media_storage_path, config):
                         if tracked_file not in memory.files:
                             memory.files.append(tracked_file)
                 db_session.commit()
-                results_page = mastodon_api.fetch_next(
-                    previous_page=results_page)
+                if results_page is not None:
+                    results_page = mastodon_api.fetch_next(
+                        previous_page=results_page)

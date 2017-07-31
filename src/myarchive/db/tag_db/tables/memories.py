@@ -36,11 +36,6 @@ class Memory(Base):
     memory_dict = Column(json_type)
     user_id = Column(Integer, ForeignKey("users.id"))
 
-    # These two keep things unique.
-    __table_args__ = (
-        UniqueConstraint(service_memory_id, user_id),
-    )
-
     files = relationship(
         "TrackedFile",
         backref=backref(
@@ -94,10 +89,10 @@ class Memory(Base):
                 memory_hash=memory_hash,
                 memory_dict=memory_dict)
             db_session.add(memory)
-            return memory
+            return memory, False
         else:
             return db_session.query(Memory).\
-                filter_by(memory_hash=memory_hash).one()
+                filter_by(memory_hash=memory_hash).one(), True
 
 
 class Message(Base):
