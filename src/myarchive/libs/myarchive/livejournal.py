@@ -8,15 +8,12 @@
 
 import logging
 
-from datetime import datetime
 from myarchive.libs.livejournal import lj
 from myarchive.libs.livejournal.backup import (
     DEFAULT_JOURNAL, update_journal_entries, update_journal_comments,
     datetime_from_string)
-from sqlalchemy.orm.exc import NoResultFound
 
-from myarchive.db.tag_db.tables import User
-from myarchive.db.tag_db.tables import Memory
+from myarchive.db.tag_db.tables import Service, User, Memory
 
 
 LOGGER = logging.getLogger(__name__)
@@ -70,6 +67,12 @@ class LJAPIConnection(object):
         # print("Updated %d entries and %d comments" % (nj, nc))
         # print(self.journal['login'])
 
+        service, unused_existing = Service.find_or_create(
+            db_session=db_session,
+            service_name="LiveJournal",
+            service_url=self._server.host,
+        )
+
         users = {
                 self.journal['login']["userid"]:
                 self.journal['login']["fullname"],
@@ -81,23 +84,12 @@ class LJAPIConnection(object):
         poster = None
         lj_users = dict()
         for user_id, username in users.items():
-            lj_user = User.find_user(
+            lj_user, existing = User.find_or_create(
                 db_session=db_session,
-                service_name="LJ",
-                service_url=self._server.host,
+                service_id=service.id,
                 user_id=user_id,
-                username=username)
-            if lj_user is None:
-                lj_user = User(
-                    service_name="LJ",
-                    service_url=self._server.host,
-                    user_id=user_id,
-                    username=username,
-                    user_dict=None,
-                )
-                if user_id == int(self.journal['login']["userid"]):
-                    lj_user.user_dict = self.journal['login']
-                db_session.add(lj_user)
+                username=username,
+            )
             lj_users[user_id] = lj_user
             if user_id == int(self.journal['login']["userid"]):
                 poster = lj_user

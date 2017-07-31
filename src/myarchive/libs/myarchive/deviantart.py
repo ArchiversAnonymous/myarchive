@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.libs.deviantart.api import DeviantartError
 from myarchive.libs import deviantart
-from myarchive.db.tag_db.tables import Memory, Tag, TrackedFile, User
+from myarchive.db.tag_db.tables import Service, Memory, Tag, TrackedFile, User
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,11 +44,19 @@ def download_user_data(database, config, media_storage_path):
             if not da_api.access_token:
                 raise Exception("Access token not acquired!")
 
+            # Get DB service record.
+            service, unused_existing = Service.find_or_create(
+                db_session=database.session,
+                service_name="deviantart",
+                service_url="https://deviantart.com",
+            )
+
             # Grab user data.
             LOGGER.info("Pulling data for user: %s...", username)
             get_da_user(
                 db_session=database.session,
                 da_api=da_api,
+                service_id=service.id,
                 username=username,
                 media_storage_path=media_storage_path)
 
@@ -137,6 +145,7 @@ def __download_user_deviations(
             da_users_by_username[deviation.author.username] = get_da_user(
                 db_session=database.session,
                 da_api=da_api,
+                service_id=service.id,
                 username=deviation.author.username,
                 media_storage_path=media_storage_path)
 
@@ -242,32 +251,27 @@ def __download_user_deviations(
             database.session.commit()
 
 
-def get_da_user(db_session, da_api, username, media_storage_path):
+def get_da_user(db_session, da_api, service_id, username, media_storage_path):
     """
     Returns the DB user object if it exists, otherwise it grabs the user data
     from the API and stuffs it in the DB.
     """
 
     # Grab the User object from the API.
-    da_user = User.find_user(
+    da_user, existing = User.find_or_create(
         db_session=db_session,
-        service_name="deviantart",
-        service_url="https://deviantart.com",
+        service_id=service_id,
         user_id=None,
-        username=username)
-    if da_user is None:
+        username=username,
+        user_dict=dict(),
+    )
+    if existing is False:
         try:
             user = da_api.get_user(username=username)
         except DeviantartError:
             LOGGER.error("Unable to obtain user data for %s", username)
             return None
-        da_user = User(
-            service_name="deviantart",
-            service_url="https://deviantart.com",
-            user_id=user.userid,
-            username=username,
-            user_dict=user.__dict__,
-        )
+        da_user.user_dict = user.__dict__
         icon_file, existing = TrackedFile.download_file(
             file_source="deviantart",
             db_session=db_session,

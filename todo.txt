@@ -27,9 +27,7 @@ Genericize DB:
         - (FK) Post ID
 
 
-Hash isn't going to work.
-
-Fix Mastodon, Twitter, DW, Youtube, DA
+Fix DA, Twitter, DW, Youtube
 
 
 
