@@ -20,7 +20,8 @@ Genericize DB:
         - (FK) Post ID
 
 
-Users must be able to own and favorite a memory.
+Hash of memory fields (User ID, ) as unique ID?
+
 Fix Mastodon, Twitter, DW, Youtube, DA
 
 
