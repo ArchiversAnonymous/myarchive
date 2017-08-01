@@ -97,9 +97,21 @@ class LJAPIConnection(object):
 
         lj_entries = dict()
         for entry_id, entry in self.journal["entries"].items():
+
             LOGGER.critical(entry)
-            LOGGER.critical(entry["event"])
-            lj_entry = Memory.find_or_create(
+            LOGGER.info("")
+            LOGGER.info("")
+            LOGGER.warning("EVENT: %s", entry["event"])
+            LOGGER.info("")
+            LOGGER.info("")
+
+            # Always convert xmlrpc.client.Binary to str.
+            if "xpostdetail" in entry["props"]:
+                entry["props"]["xpostdetail"] = str(
+                    entry["props"]["xpostdetail"])
+            entry["event"] = str(entry["event"])
+
+            lj_entry, existing = Memory.find_or_create(
                 db_session=db_session,
                 service_id=service.id,
                 service_uuid=entry_id,
@@ -107,6 +119,7 @@ class LJAPIConnection(object):
             )
             lj_entries[entry_id] = lj_entry
             poster.posts.append(lj_entry)
+            db_session.commit()
         db_session.commit()
 
         # for comment_id, comment in self.journal["comments"].items():
