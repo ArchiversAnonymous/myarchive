@@ -22,12 +22,11 @@ Genericize DB:
         - etc...
         - (FK) Service ID
         - (FK) User ID
-
     Messages
         - (FK) Post ID
 
 
-Fix Twitter, Youtube
+Fix Twitter, Youtube (playlists are tags)
 
 
 
@@ -77,7 +76,6 @@ SoFurry
 Weasyl
 Goodreads
 LibraryThing
-Mastodon
 Reddit
 Github Repository (Auto-pull updates?)
 Internet archive API may be of help.
@@ -107,3 +105,5 @@ Second Tier Priorities
    - https://developers.google.com/api-client-library/python/
  - Dreamwidth / LJ
    - Add try/except to download of comments.
+ - Mastodon
+   - Post support.
