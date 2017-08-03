@@ -92,7 +92,8 @@ def download_youtube_playlists(db_session, media_storage_path, playlist_urls):
                     service_uuid=str(video.videoid),
                     memory_dict=video_dict,
                 )
-                ytvideo.file = tracked_file
+                if tracked_file not in ytvideo.files:
+                    ytvideo.files.append(tracked_file)
                 for keyword in video.keywords:
                     tag = Tag.get_tag(db_session=db_session, tag_name=keyword)
                     ytvideo.tags.append(tag)

@@ -26,7 +26,8 @@ Genericize DB:
         - (FK) Post ID
 
 
-Fix Twitter, Youtube (playlists are tags)
+Fix Twitter, Youtube
+  - YT files aren't being connected to their memories!
 
 
 
