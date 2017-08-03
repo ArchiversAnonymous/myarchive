@@ -10,11 +10,8 @@ import os
 
 from datetime import datetime
 from logging import getLogger
-from sqlalchemy.orm.exc import NoResultFound
 
-from myarchive.db.tag_db.tables.file import TrackedFile
-from myarchive.db.tag_db.tables.tag import Tag
-from myarchive.db.tag_db.tables.yttables import YTPlaylist, YTVideo
+from myarchive.db.tag_db.tables import Service, Memory, TrackedFile, Tag
 from myarchive.libs import pafy
 
 LOGGER = getLogger(__name__)
@@ -22,23 +19,37 @@ LOGGER = getLogger(__name__)
 
 def download_youtube_playlists(db_session, media_storage_path, playlist_urls):
     """Downloads videos"""
+
+    service, unused_existing = Service.find_or_create(
+        db_session=db_session,
+        service_name="youtube",
+        service_url="https://youtube.com",
+    )
+    db_session.add(service)
+
     LOGGER.warning(
         "Youtube downloads may take quite a lot of drive space! Make sure you "
         "have a good amount free before triggering video downloads.")
+
     for playlist_url in playlist_urls:
         playlist = pafy.get_playlist2(playlist_url=playlist_url)
         LOGGER.info(
             "Parsing playlist %s [%s]...", playlist.title, playlist.author)
-        try:
-            db_playlist = db_session.query(YTPlaylist).\
-                filter_by(plid=playlist.plid).one()
-        except NoResultFound:
-            db_playlist = YTPlaylist(
-                title=playlist.title,
-                author=playlist.author,
-                description=playlist.description,
-                plid=playlist.plid)
-            db_session.add(db_playlist)
+
+        playlist_dict = {
+            "author": playlist.author,
+            "title": playlist.title,
+            "description": playlist.description,
+            "plid": playlist.plid,
+        }
+        db_playlist, unused_existing = Memory.find_or_create(
+            db_session=db_session,
+            service_id=service.id,
+            service_uuid=str(playlist.plid),
+            memory_dict=playlist_dict,
+        )
+        db_session.add(db_playlist)
+        db_session.commit()
 
         total_bytes = 0
         video_stream_tuples = []
@@ -59,24 +70,28 @@ def download_youtube_playlists(db_session, media_storage_path, playlist_urls):
                 tracked_file, existing = TrackedFile.add_file(
                     db_session=db_session,
                     media_path=media_storage_path,
+                    file_source="youtube",
                     copy_from_filepath=temp_filepath,
                     move_original_file=True,
                 )
                 if existing is True:
                     os.remove(temp_filepath)
-                    continue
                 else:
                     db_session.add(tracked_file)
 
-                ytvideo = YTVideo(
-                    uploader=video.username,
-                    description=video.description,
-                    duration=video.duration,
-                    publish_time=datetime.strptime(
-                        video.published, "%Y-%m-%d %H:%M:%S"),
-                    videoid=video.videoid
+                video_dict = {
+                    "uploader": video.username,
+                    "description": video.description,
+                    "duration": video.duration,
+                    "publish_time": video.published,
+                    "videoid": video.videoid,
+                }
+                ytvideo, unused_existing = db_playlist.add_child(
+                    db_session=db_session,
+                    service_id=service.id,
+                    service_uuid=str(video.videoid),
+                    memory_dict=video_dict,
                 )
-                db_playlist.videos.append(ytvideo)
                 ytvideo.file = tracked_file
                 for keyword in video.keywords:
                     tag = Tag.get_tag(db_session=db_session, tag_name=keyword)

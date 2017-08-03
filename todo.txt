@@ -85,7 +85,9 @@ Flickr
     https://stuvel.eu/flickrapi
     https://github.com/alexis-mignon/python-flickr-api
     https://github.com/alexis-mignon/python-flickr-api/wiki/Tutorial
-
+Tumblr
+Blogger
+Wordpress
 
 
 

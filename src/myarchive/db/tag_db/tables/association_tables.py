@@ -21,38 +21,6 @@ at_file_tag = Table(
     Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
     info="Association table for mapping files to tags and vice versa.")
 
-at_tweet_tag = Table(
-    'at_tweet_tag', Base.metadata,
-    Column("tweet_id", Integer, ForeignKey("tweets.id"), primary_key=True),
-    Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
-    info="Association table for mapping tweets to tags and vice versa.")
-
-at_tweet_file = Table(
-    'at_tweet_file', Base.metadata,
-    Column("tweet_id", Integer, ForeignKey("tweets.id"), primary_key=True),
-    Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
-    info="Association table for mapping tweets to files and vice versa.")
-
-at_twuser_file = Table(
-    'at_twuser_file', Base.metadata,
-    Column("twuser_id", Integer,
-           ForeignKey("twitter_users.id"), primary_key=True),
-    Column("file_id", Integer,
-           ForeignKey("files.id"), primary_key=True),
-    info="Association table for mapping users to files and vice versa.")
-
-at_ytvideo_tag = Table(
-    "at_yt_video_tag", Base.metadata,
-    Column("yt_video_id", Integer,
-           ForeignKey("yt_videos.id"), primary_key=True),
-    Column(
-        "tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
-    info="Association table for mapping youtube videos to tags and vice versa.")
-
-
-
-
-
 at_user_favorite = Table(
     'at_user_favorite', Base.metadata,
     Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
@@ -78,14 +46,32 @@ at_memory_tag = Table(
     Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
     info="Association table for mapping memories to tags and vice versa.")
 
-at_message_file = Table(
-    'at_message_file', Base.metadata,
-    Column("message_id", Integer, ForeignKey("messages.id"), primary_key=True),
-    Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
-    info="Association table for mapping messages to files and vice versa.")
+at_memory_memory = Table(
+    'at_memory_memory', Base.metadata,
+    Column("memory1_id", Integer, ForeignKey("memories.id"), primary_key=True),
+    Column("memory2_id", Integer, ForeignKey("memories.id"), primary_key=True),
+    info="Association table for mapping memories to each other.")
 
-at_message_tag = Table(
-    'at_message_tag', Base.metadata,
-    Column("message_id", Integer, ForeignKey("messages.id"), primary_key=True),
+
+
+
+
+at_tweet_tag = Table(
+    'at_tweet_tag', Base.metadata,
+    Column("tweet_id", Integer, ForeignKey("tweets.id"), primary_key=True),
     Column("tag_id", Integer, ForeignKey("tags.tag_id"), primary_key=True),
-    info="Association table for mapping messages to tags and vice versa.")
+    info="Association table for mapping tweets to tags and vice versa.")
+
+at_tweet_file = Table(
+    'at_tweet_file', Base.metadata,
+    Column("tweet_id", Integer, ForeignKey("tweets.id"), primary_key=True),
+    Column("file_id", Integer, ForeignKey("files.id"), primary_key=True),
+    info="Association table for mapping tweets to files and vice versa.")
+
+at_twuser_file = Table(
+    'at_twuser_file', Base.metadata,
+    Column("twuser_id", Integer,
+           ForeignKey("twitter_users.id"), primary_key=True),
+    Column("file_id", Integer,
+           ForeignKey("files.id"), primary_key=True),
+    info="Association table for mapping users to files and vice versa.")
