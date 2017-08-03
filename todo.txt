@@ -15,19 +15,12 @@ Genericize DB:
         - (PK) ID
         - Post ID
         - JSON
-        - Title
-        - Description
-        - Creation Date
         - Files
-        - etc...
         - (FK) Service ID
         - (FK) User ID
-    Messages
-        - (FK) Post ID
 
 
-Fix Twitter, Youtube
-  - YT files aren't being connected to their memories!
+Fix Twitter
 
 
 
@@ -110,3 +103,5 @@ Second Tier Priorities
    - Add try/except to download of comments.
  - Mastodon
    - Post support.
+ - Youtube
+   - Better exception handling.
