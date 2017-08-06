@@ -21,8 +21,7 @@ from collections import namedtuple
 from sqlalchemy.orm.exc import NoResultFound
 from time import sleep
 
-from myarchive.db.tag_db.tables.twittertables import Tweet, TwitterUser
-from myarchive.db.tag_db.tables.tag import Tag
+from myarchive.db.tag_db.tables import Memory, Service, Tag, User
 from myarchive.libs import twitter
 from myarchive.libs.twitter import TwitterError
 
@@ -124,15 +123,19 @@ class TwitterAPI(twitter.Api):
         return [twitter.Status.NewFromJsonDict(x) for x in data]
 
     def import_tweets(
-            self, database, username, tweet_storage_path,
+            self, database, service, username, tweet_storage_path,
             media_storage_path, tweet_type):
         """
         Archives several types of new tweets along with their associated
         content.
         """
-        existing_tweet_ids = database.get_existing_tweet_ids()
+        api_user, unused_existing = User.find_or_create(
+            db_session=database.session,
+            service_id=service.id,
+            user_id=None,
+            username=username,
+        )
 
-        new_tweets = []
         # Always start with None to pick up max number of new tweets.
         since_id = None
         start_time = -1
@@ -149,18 +152,11 @@ class TwitterAPI(twitter.Api):
                 # If we hit the rate limit, download media while we wait.
                 duration = time.time() - start_time
                 if duration < sleep_time:
-                    for new_tweet in new_tweets:
-                        new_tweet.download_media(
-                            db_session=database.session,
-                            media_path=media_storage_path)
-                    # If we're still too fast, wait however long we need to.
-                    duration = time.time() - start_time
-                    if duration < sleep_time:
-                        sleep_duration = sleep_time - duration
-                        LOGGER.info(
-                            "Sleeping for %s seconds to ease up on rate "
-                            "limit...", sleep_duration)
-                        sleep(sleep_duration)
+                    sleep_duration = sleep_time - duration
+                    LOGGER.info(
+                        "Sleeping for %s seconds to ease up on rate "
+                        "limit...", sleep_duration)
+                    sleep(sleep_duration)
             start_time = time.time()
             request_index += 1
 
@@ -208,9 +204,7 @@ class TwitterAPI(twitter.Api):
             # this ID previously.
             for loop_status in loop_statuses:
                 status_id = int(loop_status.AsDict()["id"])
-                if ((since_id is not None and status_id >= since_id) or
-                        (tweet_type == "USER" and
-                         status_id in existing_tweet_ids)):
+                if since_id is not None and status_id >= since_id:
                     early_termination = True
                     break
 
@@ -227,58 +221,62 @@ class TwitterAPI(twitter.Api):
 
             # Format things the way we want and handle max_id changes.
             LOGGER.info("Adding %s tweets to DB...", len(statuses))
-            existing_tweet_ids = [
-                returned_tuple[0]
-                for returned_tuple in database.session.query(Tweet.id).all()]
             user = None
             for status in statuses:
                 status_dict = status.AsDict()
                 status_id = int(status_dict["id"])
-                if status_id not in existing_tweet_ids:
-                    # Add the user to the DB if needed.
-                    # Only really query if we absolutely have to.
-                    user_dict = status_dict["user"]
-                    user_id = int(user_dict["id"])
-                    if user and user.id == user_id:
-                        pass
-                    else:
-                        try:
-                            user = database.session.query(TwitterUser). \
-                                filter_by(id=user_id).one()
-                        except NoResultFound:
-                            user = TwitterUser(user_dict)
-                            database.session.add(user)
-
-                    # Add the tweet to the DB.
-                    media_urls_list = list()
-                    if status_dict.get("media"):
-                        media_urls_list = [
-                            media_dict["media_url_https"]
-                            for media_dict in status_dict["media"]
-                        ]
-                    tweet = Tweet(
-                        id=status_id,
-                        text=status_dict["text"],
-                        in_reply_to_status_id=
-                        status_dict.get("in_reply_to_status_id"),
-                        created_at=status_dict["created_at"],
-                        media_urls_list=media_urls_list,
+                # Only really query if we absolutely have to.
+                user_dict = status_dict["user"]
+                user_id = int(user_dict["id"])
+                if user and user.id == user_id:
+                    pass
+                else:
+                    user, unused_existing = User.find_or_create(
+                        db_session=database.session,
+                        service_id=service.id,
+                        user_id=None,
+                        username=username,
                     )
-                    new_tweets.append(tweet)
-                    database.session.add(tweet)
 
+                # Add the tweet to the DB.
+                media_urls_list = list()
+                if status_dict.get("media"):
+                    media_urls_list = [
+                        media_dict["media_url_https"]
+                        for media_dict in status_dict["media"]
+                    ]
+                memory, existing = Memory.find_or_create(
+                    db_session=database.session,
+                    service_id=service.id,
+                    service_uuid=status_id,
+                    memory_dict=status_dict,
+                )
+                if existing is False:
+                    author_username = None
+                    if tweet_type == FAVORITES:
+                        user.favorites.append(memory)
+                        author_username = user.name
+                    elif tweet_type == USER:
+                        user.posts.append(memory)
+                        author_username = username
                     apply_tags_to_tweet(
                         db_session=database.session,
-                        tweet=tweet,
-                        tweet_type=tweet_type,
+                        tweet=memory,
+                        tweet_type=USER,
                         status_dict=status_dict,
                         username=username,
-                        author_username=user.name)
+                        author_username=author_username)
             database.session.commit()
 
-    def import_from_csv(self, database, tweet_storage_path, csv_filepath,
-                        username, media_storage_path):
-        existing_tweet_ids = database.get_existing_tweet_ids()
+    def import_from_csv(self, database, service, tweet_storage_path,
+                        csv_filepath, username, media_storage_path):
+
+        twitter_user, unused_existing = User.find_or_create(
+            db_session=database.session,
+            service_id=service.id,
+            user_id=None,
+            username=username,
+        )
 
         csv_tweets_by_id = dict()
         LOGGER.debug("Scanning CSV for new tweets...")
@@ -286,27 +284,26 @@ class TwitterAPI(twitter.Api):
             reader = csv.DictReader(csvfile)
             for row in reader:
                 tweet_id = int(row['tweet_id'])
-                if tweet_id not in existing_tweet_ids:
-                    csv_tweet = CSVTweet(
-                        id=tweet_id,
-                        username=username,
-                        in_reply_to_status_id=row["in_reply_to_status_id"],
-                        in_reply_to_user_id=row["in_reply_to_user_id"],
-                        timestamp=row["timestamp"],
-                        text=row["text"],
-                        retweeted_status_id=row["retweeted_status_id"],
-                        retweeted_status_user_id=
-                        row["retweeted_status_user_id"],
-                        retweeted_status_timestamp=
-                        row["retweeted_status_timestamp"],
-                        expanded_urls=row["expanded_urls"]
-                    )
-                    csv_tweets_by_id[tweet_id] = csv_tweet
+                csv_tweet = CSVTweet(
+                    id=tweet_id,
+                    username=username,
+                    in_reply_to_status_id=row["in_reply_to_status_id"],
+                    in_reply_to_user_id=row["in_reply_to_user_id"],
+                    timestamp=row["timestamp"],
+                    text=row["text"],
+                    retweeted_status_id=row["retweeted_status_id"],
+                    retweeted_status_user_id=
+                    row["retweeted_status_user_id"],
+                    retweeted_status_timestamp=
+                    row["retweeted_status_timestamp"],
+                    expanded_urls=row["expanded_urls"]
+                )
+                csv_tweets_by_id[tweet_id] = csv_tweet
 
         csv_ids = list(csv_tweets_by_id.keys())
         num_imports = len(csv_ids)
         LOGGER.info(
-            "Attempting API import of %s tweets based on CSV file...",
+            "Attempting API import of %s tweets from on CSV file...",
             num_imports)
 
         # API allows 60 requests per 15 minutes.
@@ -323,8 +320,7 @@ class TwitterAPI(twitter.Api):
         LOGGER.info(
             "Estimated time to complete import: %s seconds.", time_to_complete)
 
-        # Set loop starting values
-        new_tweets = []
+        # Set loop starting values.
         tweet_index = 0
         request_index = 0
         start_time = -1
@@ -337,22 +333,11 @@ class TwitterAPI(twitter.Api):
             if request_index >= requests_before_sleeps:
                 duration = time.time() - start_time
                 if duration < sleep_time:
-                    LOGGER.info("Switching to file download while we wait on "
-                                "the twitter API rate limit...")
-                    for new_tweet in new_tweets:
-                        if new_tweet.files_downloaded is False:
-                            new_tweet.download_media(
-                                db_session=database.session,
-                                media_path=media_storage_path)
-                    new_tweets = []
-                    # If we're still too fast, wait however long we need to.
-                    duration = time.time() - start_time
-                    if duration < sleep_time:
-                        sleep_duration = sleep_time - duration
-                        LOGGER.info(
-                            "Sleeping for %s seconds to avoid hitting "
-                            "Twitter's API rate limit...", sleep_duration)
-                        sleep(sleep_duration)
+                    sleep_duration = sleep_time - duration
+                    LOGGER.info(
+                        "Sleeping for %s seconds to avoid hitting "
+                        "Twitter's API rate limit...", sleep_duration)
+                    sleep(sleep_duration)
             request_index += 1
             start_time = time.time()
 
@@ -366,7 +351,6 @@ class TwitterAPI(twitter.Api):
                     status_ids=[str(sliced_id) for sliced_id in sliced_ids],
                     trim_user=False,
                     include_entities=True)
-                user = None
                 for status in statuses:
                     status_dict = status.AsDict()
 
@@ -378,45 +362,28 @@ class TwitterAPI(twitter.Api):
                     with open(tweet_filepath, 'w') as fptr:
                         json.dump(status_dict, fptr)
 
-                    # Add the user to the DB if needed.
-                    # Only really query if we absolutely have to.
-                    user_dict = status_dict["user"]
-                    user_id = int(user_dict["id"])
-                    if user and user.id == user_id:
-                        pass
-                    else:
-                        try:
-                            user = database.session.query(TwitterUser). \
-                                filter_by(id=user_id).one()
-                        except NoResultFound:
-                            user = TwitterUser(user_dict)
-                            database.session.add(user)
-
                     status_id = int(status_dict["id"])
-                    media_urls_list = list()
-                    if status_dict.get("media"):
-                        media_urls_list = [
-                            media_dict["media_url_https"]
-                            for media_dict in status_dict["media"]
-                            ]
-                    tweet = Tweet(
-                        id=status_id,
-                        text=status_dict["text"],
-                        in_reply_to_status_id=
-                        status_dict.get("in_reply_to_status_id"),
-                        created_at=status_dict["created_at"],
-                        media_urls_list=media_urls_list,
-                    )
-                    new_tweets.append(tweet)
-                    database.session.add(tweet)
-
-                    apply_tags_to_tweet(
+                    # media_urls_list = list()
+                    # if status_dict.get("media"):
+                    #     media_urls_list = [
+                    #         media_dict["media_url_https"]
+                    #         for media_dict in status_dict["media"]
+                    #         ]
+                    memory, existing = Memory.find_or_create(
                         db_session=database.session,
-                        tweet=tweet,
-                        tweet_type=USER,
-                        status_dict=status_dict,
-                        username=username,
-                        author_username=username)
+                        service_id=service.id,
+                        service_uuid=status_id,
+                        memory_dict=status_dict,
+                    )
+                    if existing is False:
+                        twitter_user.posts.append(memory)
+                        apply_tags_to_tweet(
+                            db_session=database.session,
+                            tweet=memory,
+                            tweet_type=USER,
+                            status_dict=status_dict,
+                            username=username,
+                            author_username=username)
 
                 database.session.commit()
 
@@ -436,32 +403,28 @@ class TwitterAPI(twitter.Api):
 
         LOGGER.info("Parsing out CSV-only tweets...")
         # Refresh existing tweet ID list.
-        existing_tweet_ids = database.get_existing_tweet_ids()
         for tweet_id, csv_only_tweet in csv_tweets_by_id.items():
-            if tweet_id not in existing_tweet_ids:
-                existing_tweet_ids.add(tweet_id)
-                tweet = Tweet(
-                    id=csv_only_tweet.id,
-                    text=csv_only_tweet.text,
-                    in_reply_to_status_id=csv_only_tweet.in_reply_to_status_id,
-                    created_at=csv_only_tweet.timestamp,
-                    media_urls_list=list(),
-                )
+            memory, existing = Memory.find_or_create(
+                db_session=database.session,
+                service_id=service.id,
+                service_uuid=tweet_id,
+                memory_dict=csv_only_tweet._asdict(),
+            )
+            if existing is False:
+                twitter_user.posts.append(memory)
                 apply_tags_to_tweet(
                     db_session=database.session,
-                    tweet=tweet,
+                    tweet=memory,
                     tweet_type=USER,
                     status_dict=None,
                     username=username,
                     author_username=username)
         database.session.commit()
 
-        download_media(
-            db_session=database.session, media_storage_path=media_storage_path)
-
 
 def import_tweets_from_api(
         database, config, tweet_storage_path, media_storage_path):
+    service = __get_service(database.session)
     for config_section in config.sections():
         if config_section.startswith("Twitter_"):
             api = TwitterAPI(
@@ -477,6 +440,7 @@ def import_tweets_from_api(
             for tweet_type in (USER, FAVORITES):
                 api.import_tweets(
                     database=database,
+                    service=service,
                     username=config.get(
                         section=config_section, option="username"),
                     tweet_storage_path=tweet_storage_path,
@@ -487,12 +451,15 @@ def import_tweets_from_api(
 
 def import_tweets_from_csv(database, config, tweet_storage_path,
                            username, csv_filepath, media_storage_path):
+    service = __get_service(database.session)
+
     for config_section in config.sections():
         if config_section.startswith("Twitter_%s" % username):
             break
     else:
         LOGGER.error("Username not found.")
         sys.exit(1)
+
     api = TwitterAPI(
         consumer_key=config.get(
             section=config_section, option="consumer_key"),
@@ -505,6 +472,7 @@ def import_tweets_from_csv(database, config, tweet_storage_path,
     )
     api.import_from_csv(
         database=database,
+        service=service,
         tweet_storage_path=tweet_storage_path,
         csv_filepath=csv_filepath,
         username=username,
@@ -531,19 +499,10 @@ def apply_tags_to_tweet(
         )
 
 
-def download_media(db_session, media_storage_path):
-    for index, tweet in enumerate(
-            db_session.query(Tweet).
-            filter(Tweet.files_downloaded.is_(False))):
-        tweet.download_media(
-            db_session=db_session, media_path=media_storage_path)
-        if index % 100 == 0:
-            db_session.commit()
-    for index, user in enumerate(
-            db_session.query(TwitterUser).
-            filter(TwitterUser.files_downloaded.is_(False))):
-        user.download_media(
-            db_session=db_session, media_path=media_storage_path)
-        if index % 100 == 0:
-            db_session.commit()
-    db_session.commit()
+def __get_service(db_session):
+    service, unused_existing = Service.find_or_create(
+        db_session=db_session,
+        service_name="twitter",
+        service_url="https://twitter.com",
+    )
+    return service

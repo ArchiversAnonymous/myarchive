@@ -21,7 +21,8 @@ Genericize DB:
 
 
 Fix Twitter
-
+    - File downloads!
+    - API user dict?
 
 
 

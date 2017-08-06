@@ -14,7 +14,7 @@ import os
 
 from myarchive.db.db import DB
 
-from myarchive.db.tag_db.tables import Base, TrackedFile, Tweet
+from myarchive.db.tag_db.tables import Base, TrackedFile
 
 # Get the module logger.
 LOGGER = logging.getLogger(__name__)
@@ -32,14 +32,6 @@ class TagDB(DB):
         )
         self.metadata.create_all(self.engine)
         self.existing_tweet_ids = None
-
-    def get_existing_tweet_ids(self):
-        tweet_ids = [
-            returned_tuple[0]
-            for returned_tuple in
-            self.session.query(Tweet.id).all()]
-        tweet_id_set = set(tweet_ids)
-        return tweet_id_set
 
     def import_files(self, import_path, media_path, glob_ignores):
         if os.path.isdir(import_path):

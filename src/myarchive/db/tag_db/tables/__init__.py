@@ -12,5 +12,4 @@ from .base import Base, json_type
 from .file import TrackedFile
 from .tag import Tag
 from .user import Service, User
-from .twittertables import Tweet, TwitterUser
 from .memories import Memory
