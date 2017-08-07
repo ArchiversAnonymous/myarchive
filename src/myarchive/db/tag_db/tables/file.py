@@ -108,21 +108,17 @@ class TrackedFile(Base):
             extension = fix_file_extension(
                 file_buffer=file_buffer, original_filename=original_filename)
             filepath = os.path.join(media_path, str(md5sum)) + extension
-            try:
-                tracked_file = \
-                    db_session.query(cls).filter_by(md5sum=md5sum).one()
+            tracked_file = \
+                db_session.query(cls).filter_by(md5sum=md5sum).first()
+            if tracked_file is not None:
                 LOGGER.debug(
                     "Repeated hash: %s [%s, %s]",
                     md5sum, tracked_file.original_filename, original_filename)
                 existing = True
-            except NoResultFound:
+            else:
                 tracked_file = TrackedFile(
                     file_source, original_filename, filepath, md5sum, url)
                 db_session.add(tracked_file)
-            except MultipleResultsFound:
-                LOGGER.critical(
-                    [file_source, original_filename, filepath, md5sum, url])
-                raise
             if existing is True:
                 # Update the database record of the file if it doesn't have
                 # original_filename set. (This means that we recovered the file
@@ -149,21 +145,17 @@ class TrackedFile(Base):
                     md5sum = get_fptr_md5sum(fptr=fptr)
             filepath = os.path.join(media_path, md5sum + extension)
 
-            try:
-                tracked_file = \
-                    db_session.query(cls).filter_by(md5sum=md5sum).one()
+            tracked_file = \
+                db_session.query(cls).filter_by(md5sum=md5sum).first()
+            if tracked_file is not None:
                 LOGGER.debug(
                     "Repeated hash: %s [%s, %s]",
                     md5sum, tracked_file.original_filename, original_filename)
                 existing = True
-            except NoResultFound:
+            else:
                 tracked_file = TrackedFile(
                     file_source, original_filename, filepath, md5sum, url)
                 db_session.add(tracked_file)
-            except MultipleResultsFound:
-                LOGGER.critical(
-                    [file_source, original_filename, filepath, md5sum, url])
-                raise
 
             if existing is True:
                 # Update the database record of the file if it doesn't have
@@ -202,10 +194,11 @@ class TrackedFile(Base):
         else:
             saved_url = url
 
-        try:
-            tracked_file = db_session.query(cls).filter_by(url=saved_url).one()
+        tracked_file = \
+            db_session.query(cls).filter_by(url=saved_url).first()
+        if tracked_file is not None:
             return tracked_file, True
-        except NoResultFound:
+        else:
             pass
 
         # Download the file.

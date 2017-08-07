@@ -22,10 +22,9 @@ Genericize DB:
 
 Fix Twitter
     - File downloads!
-    - API user dict!
     - Speedup!
       - Improve algorithm for rate handling.
-    - 40000??????
+    - Faves not linked to their authors. Authors not created.
 
 
 
