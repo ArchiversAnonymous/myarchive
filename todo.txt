@@ -20,11 +20,18 @@ Genericize DB:
         - (FK) User ID
 
 
-Fix Twitter
-    - File downloads!
-    - Speedup!
-      - Improve algorithm for rate handling.
-    - Faves not linked to their authors. Authors not created.
+Twitter
+    Speedup!
+        Improve algorithm for rate handling.
+        Parsing out csv-only tweets TAKES FOREVER.
+    Faves not linked to their authors. Authors not created.
+    File downloads
+    Tags not being applied to memories properly.
+Mastodon
+    File downloads
+    Tags not being applied to memories properly.
+LJ
+    Tags not being applied to memories properly.
 
 
 

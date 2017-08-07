@@ -72,4 +72,4 @@ class Tag(Base):
             RECENT_TAG_CACHE[tag_name] = tag
             db_session.add(tag)
             db_session.commit()
-            return tag
+        return tag
