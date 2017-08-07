@@ -22,7 +22,10 @@ Genericize DB:
 
 Fix Twitter
     - File downloads!
-    - API user dict?
+    - API user dict!
+    - Speedup!
+      - Improve algorithm for rate handling.
+    - 40000??????
 
 
 

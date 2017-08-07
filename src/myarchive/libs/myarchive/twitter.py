@@ -12,7 +12,6 @@
 
 import csv
 import logging
-import json
 import os
 import sys
 import time
@@ -120,7 +119,8 @@ class TwitterAPI(twitter.Api):
         resp = self._RequestUrl(url, 'GET', data=parameters)
         data = self._ParseAndCheckTwitter(resp.content.decode('utf-8'))
 
-        return [twitter.Status.NewFromJsonDict(x) for x in data]
+        # return [twitter.Status.NewFromJsonDict(x) for x in data]
+        return data
 
     def import_tweets(
             self, database, service, username, tweet_storage_path,
@@ -208,12 +208,6 @@ class TwitterAPI(twitter.Api):
                     early_termination = True
                     break
 
-                # Dump the tweet as a JSON file in case something goes
-                # wrong.
-                tweet_filepath = os.path.join(
-                    tweet_storage_path, "%s.json" % status_id)
-                with open(tweet_filepath, 'w') as fptr:
-                    json.dump(loop_status.AsDict(), fptr)
                 statuses.append(loop_status)
                 # Capture new max_id
                 if max_id is None or status_id < max_id:
@@ -252,20 +246,14 @@ class TwitterAPI(twitter.Api):
                     memory_dict=status_dict,
                 )
                 if existing is False:
-                    author_username = None
                     if tweet_type == FAVORITES:
                         user.favorites.append(memory)
-                        author_username = user.name
                     elif tweet_type == USER:
                         user.posts.append(memory)
-                        author_username = username
                     apply_tags_to_tweet(
                         db_session=database.session,
                         tweet=memory,
-                        tweet_type=USER,
-                        status_dict=status_dict,
-                        username=username,
-                        author_username=author_username)
+                        status_dict=status_dict)
             database.session.commit()
 
     def import_from_csv(self, database, service, tweet_storage_path,
@@ -327,6 +315,9 @@ class TwitterAPI(twitter.Api):
         sliced_ids = csv_ids[:100]
         while sliced_ids:
 
+            duration = time.time() - start_time
+            LOGGER.critical(duration)
+
             # Sleep to not hit the rate limit.
             # Twitter rate-limits us. Space this out a bit to avoid a
             # super-long sleep at the end doesn't kill the connection.
@@ -351,17 +342,7 @@ class TwitterAPI(twitter.Api):
                     status_ids=[str(sliced_id) for sliced_id in sliced_ids],
                     trim_user=False,
                     include_entities=True)
-                for status in statuses:
-                    status_dict = status.AsDict()
-
-                    # Dump the tweet as a JSON file in case something goes
-                    # wrong. Do none of this if we've passed the since_id
-                    # threhold.
-                    tweet_filepath = os.path.join(
-                        tweet_storage_path, "%s.json" % int(status_dict["id"]))
-                    with open(tweet_filepath, 'w') as fptr:
-                        json.dump(status_dict, fptr)
-
+                for status_dict in statuses:
                     status_id = int(status_dict["id"])
                     # media_urls_list = list()
                     # if status_dict.get("media"):
@@ -380,10 +361,7 @@ class TwitterAPI(twitter.Api):
                         apply_tags_to_tweet(
                             db_session=database.session,
                             tweet=memory,
-                            tweet_type=USER,
-                            status_dict=status_dict,
-                            username=username,
-                            author_username=username)
+                            status_dict=status_dict)
 
                 database.session.commit()
 
@@ -396,6 +374,7 @@ class TwitterAPI(twitter.Api):
                     request_index = requests_before_sleeps
                     sleep(sleep_time)
                     continue
+                database.session.rollback()
                 raise
             tweet_index += 100
             sliced_ids = csv_ids[tweet_index:100 + tweet_index]
@@ -415,10 +394,7 @@ class TwitterAPI(twitter.Api):
                 apply_tags_to_tweet(
                     db_session=database.session,
                     tweet=memory,
-                    tweet_type=USER,
-                    status_dict=None,
-                    username=username,
-                    author_username=username)
+                    status_dict=None)
         database.session.commit()
 
 
@@ -480,17 +456,12 @@ def import_tweets_from_csv(database, config, tweet_storage_path,
     )
 
 
-def apply_tags_to_tweet(
-        db_session, tweet, tweet_type, status_dict, username, author_username):
+def apply_tags_to_tweet(db_session, tweet, status_dict):
     """Applies appropriate tags to the tweet."""
-    tag_names = set(
-        "twitter.%s.tweet" % author_username,
-    )
+    tag_names = set()
     if status_dict is not None and "hashtags" in status_dict:
         for hashtag_dict in status_dict["hashtags"]:
             tag_names.add(hashtag_dict["text"])
-    if tweet_type == FAVORITES:
-        tag_names.add("twitter.%s.favorite" % username)
     for tag_name in tag_names:
         tweet.tags.append(
             Tag.get_tag(

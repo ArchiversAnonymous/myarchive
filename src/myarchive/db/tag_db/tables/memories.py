@@ -6,9 +6,10 @@
 # @Last modified time: 2017/07/21
 # @License MIT
 
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import (
+    Column, Integer, String, ForeignKey, Index, UniqueConstraint)
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import backref, relationship, load_only
 from sqlalchemy.orm.exc import NoResultFound
 
 from myarchive.db.tag_db.tables.association_tables import (
@@ -34,6 +35,11 @@ class Memory(Base):
     service_id = Column(Integer, ForeignKey("services.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
 
+    __table_args__ = (
+        Index('memory_index', "service_id", "service_uuid"),
+        UniqueConstraint('service_id', 'service_uuid'),
+    )
+
     files = relationship(
         "TrackedFile",
         backref=backref(
@@ -53,10 +59,6 @@ class Memory(Base):
         secondaryjoin=(at_memory_memory.c.memory2_id == id),
         secondary=at_memory_memory,
     )
-    # 'Volume', secondary = VolumeRelationship,
-    # primaryjoin = VolumeRelationship.c.VolumeID == id,
-    # secondaryjoin = VolumeRelationship.c.ParentID == id,
-
     tags = relationship(
         "Tag",
         backref=backref(
@@ -77,12 +79,12 @@ class Memory(Base):
 
     @classmethod
     def find_or_create(cls, db_session, service_id, service_uuid, memory_dict):
-        try:
-            memory = db_session.query(cls).\
-                filter_by(service_uuid=service_uuid).\
-                filter_by(service_id=service_id).one()
-            existing = True
-        except NoResultFound:
+        existing = True
+        memory = db_session.query(cls).\
+            options(load_only("service_uuid", "service_id")).\
+            filter_by(service_uuid=service_uuid).\
+            filter_by(service_id=service_id).first()
+        if memory is None:
             memory = cls(
                 service_uuid=service_uuid,
                 memory_dict=memory_dict,
