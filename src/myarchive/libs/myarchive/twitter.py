@@ -233,7 +233,7 @@ class TwitterAPI(twitter.Api):
                         db_session=database.session,
                         service_id=service.id,
                         user_id=user_id,
-                        username=username,
+                        username=None,
                         user_dict=user_dict,
                     )
                     database.session.add(author)
