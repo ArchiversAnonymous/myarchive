@@ -50,19 +50,18 @@ class Service(Base):
 
     @classmethod
     def find_or_create(cls, db_session, service_name, service_url):
-        try:
-            service = db_session.query(cls).\
-                filter_by(service_name=service_name).\
-                filter_by(service_url=service_url).one()
-            existing = True
-        except NoResultFound:
-            service = cls(
-                service_name=service_name,
-                service_url=service_url)
-            db_session.add(service)
-            db_session.commit()
-            existing = False
-        return service, existing
+        service = db_session.query(cls).\
+            filter_by(service_name=service_name).\
+            filter_by(service_url=service_url).first()
+        if service is not None:
+            return service, True
+
+        service = cls(
+            service_name=service_name,
+            service_url=service_url)
+        db_session.add(service)
+        db_session.commit()
+        return service, False
 
 
 class User(Base):
@@ -119,15 +118,17 @@ class User(Base):
             query = db_session.query(cls). \
                 filter_by(service_id=service_id). \
                 filter_by(username=username)
-        try:
-            return query.one(), True
-        except NoResultFound:
-            user = cls(
-                user_id=user_id,
-                username=username,
-                user_dict=user_dict,
-                service_id=service_id,
-            )
-            db_session.add(user)
-            db_session.commit()
-            return user, False
+
+        user = query.first()
+        if user is not None:
+            return user, True
+
+        user = cls(
+            user_id=user_id,
+            username=username,
+            user_dict=user_dict,
+            service_id=service_id,
+        )
+        db_session.add(user)
+        db_session.commit()
+        return user, False

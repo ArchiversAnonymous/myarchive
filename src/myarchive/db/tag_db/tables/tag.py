@@ -65,11 +65,9 @@ class Tag(Base):
         global RECENT_TAG_CACHE
         if tag_name in RECENT_TAG_CACHE:
             return RECENT_TAG_CACHE[tag_name]
-        try:
-            tag = db_session.query(cls).filter_by(name=tag_name).one()
-            RECENT_TAG_CACHE[tag_name] = tag
-            return tag
-        except NoResultFound:
+
+        tag = db_session.query(cls).filter_by(name=tag_name).first()
+        if tag is None:
             tag = cls(name=tag_name)
             RECENT_TAG_CACHE[tag_name] = tag
             db_session.add(tag)

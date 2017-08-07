@@ -129,12 +129,16 @@ class TwitterAPI(twitter.Api):
         Archives several types of new tweets along with their associated
         content.
         """
-        api_user, unused_existing = User.find_or_create(
+        api_user_dict = self.GetUser(screen_name=username).AsDict()
+        twitter_user, unused_existing = User.find_or_create(
             db_session=database.session,
             service_id=service.id,
-            user_id=None,
-            username=username,
+            user_id=api_user_dict["id"],
+            username=api_user_dict["screen_name"],
+            user_dict=api_user_dict,
         )
+        database.session.add(twitter_user)
+        database.session.commit()
 
         # Always start with None to pick up max number of new tweets.
         since_id = None
@@ -215,22 +219,24 @@ class TwitterAPI(twitter.Api):
 
             # Format things the way we want and handle max_id changes.
             LOGGER.info("Adding %s tweets to DB...", len(statuses))
-            user = None
+            author = None
             for status in statuses:
                 status_dict = status.AsDict()
                 status_id = int(status_dict["id"])
                 # Only really query if we absolutely have to.
                 user_dict = status_dict["user"]
                 user_id = int(user_dict["id"])
-                if user and user.id == user_id:
+                if author and author.id == user_id:
                     pass
                 else:
-                    user, unused_existing = User.find_or_create(
+                    author, unused_existing = User.find_or_create(
                         db_session=database.session,
                         service_id=service.id,
-                        user_id=None,
+                        user_id=user_id,
                         username=username,
+                        user_dict=user_dict,
                     )
+                    database.session.add(author)
 
                 # Add the tweet to the DB.
                 media_urls_list = list()
@@ -247,9 +253,10 @@ class TwitterAPI(twitter.Api):
                 )
                 if existing is False:
                     if tweet_type == FAVORITES:
-                        user.favorites.append(memory)
+                        twitter_user.favorites.append(memory)
+                        author.posts.append(memory)
                     elif tweet_type == USER:
-                        user.posts.append(memory)
+                        twitter_user.posts.append(memory)
                     apply_tags_to_tweet(
                         db_session=database.session,
                         tweet=memory,
@@ -259,12 +266,17 @@ class TwitterAPI(twitter.Api):
     def import_from_csv(self, database, service, tweet_storage_path,
                         csv_filepath, username, media_storage_path):
 
+        api_user_dict = self.GetUser(screen_name=username).AsDict()
+
         twitter_user, unused_existing = User.find_or_create(
             db_session=database.session,
             service_id=service.id,
-            user_id=None,
-            username=username,
+            user_id=api_user_dict["id"],
+            username=api_user_dict["screen_name"],
+            user_dict=api_user_dict,
         )
+        database.session.add(twitter_user)
+        database.session.commit()
 
         csv_tweets_by_id = dict()
         LOGGER.debug("Scanning CSV for new tweets...")
