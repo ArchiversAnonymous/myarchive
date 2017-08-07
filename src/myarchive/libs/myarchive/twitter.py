@@ -148,7 +148,6 @@ class TwitterAPI(twitter.Api):
         early_termination = False
         request_index = 0
         requests_before_sleeps = 1
-        statuses = []
         while not early_termination:
             # Twitter rate-limits us. Space this out a bit to avoid a
             # super-long sleep at the end doesn't kill the connection.
@@ -203,24 +202,16 @@ class TwitterAPI(twitter.Api):
             # condition.
             if not loop_statuses:
                 break
-            # Check for early termination condition. We'll kick out if we
-            # pass since_id, or if we're pulling user tweets and we've hit
-            # this ID previously.
-            for loop_status in loop_statuses:
-                status_id = int(loop_status.AsDict()["id"])
-                if since_id is not None and status_id >= since_id:
-                    early_termination = True
-                    break
-
-                statuses.append(loop_status)
-                # Capture new max_id
-                if max_id is None or status_id < max_id:
-                    max_id = status_id - 1
+            # Update our max ID counter.
+            max_id = min(
+                [int(loop_status.AsDict()["id"])
+                 for loop_status in loop_statuses]
+            )
 
             # Format things the way we want and handle max_id changes.
-            LOGGER.info("Adding %s tweets to DB...", len(statuses))
+            LOGGER.info("Adding %s tweets to DB...", len(loop_statuses))
             author = None
-            for status in statuses:
+            for status in loop_statuses:
                 status_dict = status.AsDict()
                 status_id = int(status_dict["id"])
                 # Only really query if we absolutely have to.
