@@ -206,7 +206,7 @@ class TwitterAPI(twitter.Api):
             max_id = min(
                 [int(loop_status.AsDict()["id"])
                  for loop_status in loop_statuses]
-            )
+            ) - 1
 
             # Format things the way we want and handle max_id changes.
             LOGGER.info("Adding %s tweets to DB...", len(loop_statuses))
